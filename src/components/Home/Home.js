@@ -41,8 +41,8 @@ function Home() {
                   <a
                     href="https://github.com/angelopol"
                     target="_blank"
-                    rel="noreferrer"
-                    className="icon-colour  home-social-icons"
+                    rel="noopener noreferrer"
+                    className="icon-colour home-social-icons"
                   >
                     <AiFillGithub />
                   </a>
@@ -51,8 +51,8 @@ function Home() {
                   <a
                     href="https://www.linkedin.com/in/angelopolgrossi"
                     target="_blank"
-                    rel="noreferrer"
-                    className="icon-colour  home-social-icons"
+                    rel="noopener noreferrer"
+                    className="icon-colour home-social-icons"
                   >
                     <FaLinkedinIn />
                   </a>
