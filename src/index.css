@@ -1,8 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Raleway:wght@500&display=swap");
+@import url('./Fonts/nunito/nunito.css');
 body {
   margin: 0;
-  font-family: "Raleway", serif !important;
+  font-family: 'Nunito', sans-serif !important;
+  font-style: normal !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: linear-gradient(to left, rgb(27 20 41), rgb(20 15 35));
+  background: linear-gradient(90deg, rgba(7, 106, 32, 0.173) 0%, rgba(0, 137, 209, 1) 100%);
+}
+
+* {
+  color: black !important;
 }
