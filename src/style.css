@@ -153,7 +153,7 @@ button:focus {
 }
 
 .navbar-nav .nav-link {
-  color: white !important;
+  color: black !important;
   padding-right: 1rem !important;
   padding-left: 1rem !important;
 }
@@ -252,7 +252,7 @@ button:focus {
 
 .home-content {
   padding: 9rem 0 2rem !important;
-  color: whitesmoke;
+  color: black;
   text-align: left;
 }
 
@@ -309,7 +309,7 @@ button:focus {
 }
 
 .home-about-description {
-  color: white !important;
+  color: black !important;
   padding-top: 100px !important;
   padding-bottom: 20px !important;
   text-align: center;
@@ -324,7 +324,7 @@ button:focus {
 .home-about-social {
   text-align: center !important;
   padding-top: 25px;
-  color: white !important;
+  color: black !important;
 }
 
 .home-about-social-links {
@@ -377,6 +377,7 @@ button:focus {
   display: inline-block !important;
   padding-right: 15px;
   padding-left: 15px;
+  color: black !important;
 }
 
 .icon-colour {
@@ -412,7 +413,7 @@ button:focus {
 
 .footer h3 {
   font-size: 1em;
-  color: white !important;
+  color: black !important;
   margin-top: 0.5em !important;
   margin-bottom: 0.5em !important;
 }
@@ -444,7 +445,7 @@ button:focus {
 
 .project-card-view {
   box-shadow: 0 4px 5px 3px rgba(2, 32, 9, 0.266) !important;
-  color: white !important;
+  color: black !important;
   background-color: transparent !important;
   opacity: 0.9 !important;
   transition: all 0.5s ease 0s !important;
@@ -467,13 +468,13 @@ button:focus {
 .blog-card-view {
   background-color: transparent !important;
   box-shadow: 0 3px 3px 2px rgba(2, 32, 9, 0.266) !important;
-  color: white !important;
+  color: black !important;
   transition: all 0.5s ease 0s !important;
   height: 100% !important;
 }
 
 .blog-link {
-  color: white !important;
+  color: black !important;
   text-decoration: none !important;
 }
 
@@ -529,7 +530,7 @@ button:focus {
   position: relative !important;
   padding-top: 150px !important;
   padding-bottom: 30px !important;
-  color: white !important;
+  color: black !important;
 }
 
 .tech-icons {
@@ -565,7 +566,7 @@ button:focus {
 
 .quote-card-view {
   border: none !important;
-  color: white !important;
+  color: black !important;
   background-color: transparent !important;
 }
 

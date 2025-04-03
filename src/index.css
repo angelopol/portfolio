@@ -7,7 +7,3 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(90deg, rgba(7, 106, 32, 0.173) 0%, rgba(0, 137, 209, 1) 100%);
 }
-
-* {
-  color: black !important;
-}
