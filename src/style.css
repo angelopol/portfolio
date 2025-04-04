@@ -494,6 +494,8 @@ button:focus {
   aspect-ratio: 16 / 12; /* Adjust the ratio as needed */
   background-color: #f0f0f0; /* Placeholder color while the image loads */
   overflow: hidden;
+  border-top-right-radius: var(--bs-card-inner-border-radius);
+  border-top-left-radius: var(--bs-card-inner-border-radius);
 }
 
 .card-img-container img {
@@ -503,6 +505,8 @@ button:focus {
   width: 100%;
   height: 100%;
   object-fit: cover; /* Ensures the image scales properly */
+  border-bottom-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
 }
 
 .card-img-top {
