@@ -22,14 +22,21 @@ function ResumeNew() {
         </Row>
 
         <div className="container">
-          <Row className="resume" style={{ position: "relative" }}>
-            <iframe
-              src={pdf}
-              title="CV - Angelo Polgrossi"
-              width="100%"
-              height="800px"
-              style={{ border: "none" }}
-            ></iframe>
+          <Row className="resume justify-content-center" style={{ position: "relative" }}>
+            <div style={{ position: "relative", width: "100%", paddingTop: "56.25%"}}>
+              <iframe
+                src={pdf}
+                title="CV - Angelo Polgrossi"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+              ></iframe>
+            </div>
           </Row>
         </div>
 
