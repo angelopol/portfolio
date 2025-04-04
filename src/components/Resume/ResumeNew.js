@@ -1,10 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Row, Button } from "react-bootstrap";
 import Particle from "../Particle";
 import pdf from "../../Assets/CV - Angelo Polgrossi - English.pdf";
 import { AiOutlineDownload } from "react-icons/ai";
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
 function ResumeNew() {
   return (
@@ -23,7 +21,17 @@ function ResumeNew() {
           </Button>
         </Row>
 
-        <br></br>
+        <div className="container">
+          <Row className="resume" style={{ position: "relative" }}>
+            <iframe
+              src={pdf}
+              title="CV - Angelo Polgrossi"
+              width="100%"
+              height="800px"
+              style={{ border: "none" }}
+            ></iframe>
+          </Row>
+        </div>
 
         <Row style={{ justifyContent: "center", position: "relative" }}>
           <Button
