@@ -1,6 +1,7 @@
 import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import Tilt from "react-parallax-tilt";
+import profile from "../../Assets/profile.jpeg";
 
 function Home2() {
   return (
@@ -21,7 +22,7 @@ function Home2() {
           <Col md={4} className="myAvtar">
             <Tilt>
               <img
-                src={"../../Assets/profile.jpeg"}
+                src={profile}
                 className="img-fluid rounded-circle w-50 h-50"
                 alt="avatar"
               />
