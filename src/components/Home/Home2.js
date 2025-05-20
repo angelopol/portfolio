@@ -21,7 +21,7 @@ function Home2() {
           <Col md={4} className="myAvtar">
             <Tilt>
               <img
-                src={"https://media.licdn.com/dms/image/v2/D4E35AQFsTJpEne8fIQ/profile-framedphoto-shrink_400_400/B4EZX2iYm7HUAc-/0/1743597963998?e=1744214400&v=beta&t=nrCAeabTE2mXx0r6V76v2HUxTu7ZeBHKwAn668JFErI"}
+                src={"../../Assets/profile.jpeg"}
                 className="img-fluid rounded-circle w-50 h-50"
                 alt="avatar"
               />
