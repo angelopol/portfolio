@@ -134,6 +134,9 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(initialContent.projects.map((project) => [project.id, true]))
   );
+  const [projectStackInputs, setProjectStackInputs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(initialContent.projects.map((project) => [project.id, project.stack.join(", ")]))
+  );
   const [projectGallerySelections, setProjectGallerySelections] = useState<Record<string, string>>(
     {}
   );
@@ -274,6 +277,25 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       const currentKeys = Object.keys(currentState);
       const hasDifferentSize = nextKeys.length !== currentKeys.length;
       const hasDifferentValue = nextKeys.some((key) => nextState[key] !== currentState[key]);
+
+      if (!hasDifferentSize && !hasDifferentValue) {
+        return currentState;
+      }
+
+      return nextState;
+    });
+  }, [draft.projects]);
+
+  useEffect(() => {
+    setProjectStackInputs((currentState) => {
+      const nextState = Object.fromEntries(
+        draft.projects.map((project) => [project.id, currentState[project.id] ?? project.stack.join(", ")])
+      );
+
+      const hasDifferentSize = Object.keys(nextState).length !== Object.keys(currentState).length;
+      const hasDifferentValue = Object.entries(nextState).some(
+        ([projectId, value]) => currentState[projectId] !== value
+      );
 
       if (!hasDifferentSize && !hasDifferentValue) {
         return currentState;
@@ -567,6 +589,11 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   }
 
   function updateProjectStack(projectId: string, value: string) {
+    setProjectStackInputs((currentState) => ({
+      ...currentState,
+      [projectId]: value,
+    }));
+
     updateProject(projectId, (project) => ({
       ...project,
       stack: value
@@ -2093,7 +2120,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                             <span className="mb-2 block text-sm font-medium text-slate-200">Stack</span>
                             <input
                               type="text"
-                              value={project.stack.join(", ")}
+                              value={projectStackInputs[project.id] ?? project.stack.join(", ")}
                               onChange={(event) => updateProjectStack(project.id, event.target.value)}
                               className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
                             />
