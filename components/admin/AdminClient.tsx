@@ -125,6 +125,9 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   const [aboutSummaryInput, setAboutSummaryInput] = useState(initialContent.about.summary.join("\n"));
   const [aboutSkillsetInput, setAboutSkillsetInput] = useState(initialContent.about.skillset.join("\n"));
   const [aboutToolsetInput, setAboutToolsetInput] = useState(initialContent.about.toolset.join("\n"));
+  const [mediaLibraryCollapsed, setMediaLibraryCollapsed] = useState(true);
+  const [mediaLibraryModalOpen, setMediaLibraryModalOpen] = useState(false);
+  const [mediaLibraryPage, setMediaLibraryPage] = useState(1);
   const [homeEditorCollapsed, setHomeEditorCollapsed] = useState(true);
   const [aboutEditorCollapsed, setAboutEditorCollapsed] = useState(true);
   const [projectsEditorCollapsed, setProjectsEditorCollapsed] = useState(true);
@@ -150,6 +153,15 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     () => mediaLibrary.filter((item) => item.kind === "image"),
     [mediaLibrary]
   );
+
+  const mediaItemsPerPage = 6;
+
+  const mediaLibraryTotalPages = Math.max(1, Math.ceil(mediaLibrary.length / mediaItemsPerPage));
+
+  const paginatedMediaLibrary = useMemo(() => {
+    const startIndex = (mediaLibraryPage - 1) * mediaItemsPerPage;
+    return mediaLibrary.slice(startIndex, startIndex + mediaItemsPerPage);
+  }, [mediaLibrary, mediaLibraryPage]);
 
   const stats = useMemo(
     () => [
@@ -285,6 +297,10 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       return nextState;
     });
   }, [draft.projects]);
+
+  useEffect(() => {
+    setMediaLibraryPage((currentPage) => Math.min(currentPage, mediaLibraryTotalPages));
+  }, [mediaLibraryTotalPages]);
 
   useEffect(() => {
     setProjectStackInputs((currentState) => {
@@ -1291,77 +1307,45 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                 </label>
               </div>
 
-              <div className="mt-6 space-y-3">
-                {mediaLibrary.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-400">
-                    Aún no hay archivos subidos al almacenamiento local.
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Lista de archivos locales</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {mediaLibrary.length === 0
+                        ? "Aún no hay archivos subidos al almacenamiento local."
+                        : `${mediaLibrary.length} archivo${mediaLibrary.length === 1 ? "" : "s"} indexado${mediaLibrary.length === 1 ? "" : "s"} en la librería.`}
+                    </p>
                   </div>
-                ) : (
-                  mediaLibrary.map((item) => {
-                    const locked = isMediaInUse(item.url);
 
-                    return (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="flex flex-col gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-white">{item.name}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                              {item.kind === "image" ? "Imagen" : "Documento"} · {item.url}
-                            </p>
-                          </div>
+                  <button
+                    type="button"
+                    onClick={() => setMediaLibraryCollapsed((current) => !current)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                  >
+                    {mediaLibraryCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                    {mediaLibraryCollapsed ? "Expandir" : "Contraer"}
+                  </button>
+                </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void copyUrl(item.url)}
-                              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                            >
-                              <FiCopy />
-                              Copiar ruta
-                            </button>
+                {!mediaLibraryCollapsed && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-4">
+                    <div className="text-sm text-slate-300">
+                      Abre la librería en un modal con paginación para revisar, reutilizar o borrar archivos.
+                    </div>
 
-                            {item.kind === "image" && (
-                              <button
-                                type="button"
-                                onClick={() => applyProfileImage(item.url)}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                              >
-                                <FiImage />
-                                Usar como perfil
-                              </button>
-                            )}
-
-                            {item.kind === "document" && (
-                              <button
-                                type="button"
-                                onClick={() => applyResumeFile(item.url)}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                              >
-                                <FiUploadCloud />
-                                Usar como CV
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => requestDeleteMedia(item)}
-                              disabled={locked || deletingMediaId === item.id}
-                              className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <FiTrash2 />
-                              {deletingMediaId === item.id ? "Borrando..." : "Borrar"}
-                            </button>
-                          </div>
-
-                          {locked && (
-                            <p className="text-xs text-amber-200">
-                              Este archivo está enlazado al contenido actual. Reemplázalo antes de borrarlo.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaLibraryPage(1);
+                        setMediaLibraryModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                    >
+                      <FiEye />
+                      Ver archivos
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -2397,6 +2381,134 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
               )}
             </div>
         </section>
+
+        {mediaLibraryModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
+            <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--color-surface)] shadow-2xl">
+              <div className="flex flex-col gap-4 border-b border-white/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="section-label">Archivos locales</p>
+                  <h3 className="mt-2 font-display text-2xl font-semibold text-white">Librería paginada</h3>
+                  <p className="mt-2 text-sm text-slate-300">
+                    Página {mediaLibraryPage} de {mediaLibraryTotalPages} · {mediaLibrary.length} archivo{mediaLibrary.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMediaLibraryModalOpen(false)}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                {mediaLibrary.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-400">
+                    Aún no hay archivos subidos al almacenamiento local.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {paginatedMediaLibrary.map((item) => {
+                      const locked = isMediaInUse(item.url);
+
+                      return (
+                        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                          <div className="flex flex-col gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white">{item.name}</p>
+                              <p className="mt-1 break-all text-xs uppercase tracking-[0.18em] text-slate-500">
+                                {item.kind === "image" ? "Imagen" : "Documento"} · {item.url}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void copyUrl(item.url)}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                              >
+                                <FiCopy />
+                                Copiar ruta
+                              </button>
+
+                              {item.kind === "image" && (
+                                <button
+                                  type="button"
+                                  onClick={() => applyProfileImage(item.url)}
+                                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                                >
+                                  <FiImage />
+                                  Usar como perfil
+                                </button>
+                              )}
+
+                              {item.kind === "document" && (
+                                <button
+                                  type="button"
+                                  onClick={() => applyResumeFile(item.url)}
+                                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                                >
+                                  <FiUploadCloud />
+                                  Usar como CV
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => requestDeleteMedia(item)}
+                                disabled={locked || deletingMediaId === item.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <FiTrash2 />
+                                {deletingMediaId === item.id ? "Borrando..." : "Borrar"}
+                              </button>
+                            </div>
+
+                            {locked && (
+                              <p className="text-xs text-amber-200">
+                                Este archivo está enlazado al contenido actual. Reemplázalo antes de borrarlo.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {mediaLibrary.length > 0 && (
+                <div className="flex flex-col gap-3 border-t border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    Mostrando {Math.min((mediaLibraryPage - 1) * mediaItemsPerPage + 1, mediaLibrary.length)}-
+                    {Math.min(mediaLibraryPage * mediaItemsPerPage, mediaLibrary.length)} de {mediaLibrary.length}
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMediaLibraryPage((current) => Math.max(1, current - 1))}
+                      disabled={mediaLibraryPage === 1}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMediaLibraryPage((current) => Math.min(mediaLibraryTotalPages, current + 1))}
+                      disabled={mediaLibraryPage === mediaLibraryTotalPages}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {confirmDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
