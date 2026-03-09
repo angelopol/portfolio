@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "Angelo Polgrossi | Dynamic Portfolio",
   description:
     "Portfolio rebuilt with Next.js, TypeScript and Tailwind CSS, including a protected control room for content and style updates.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
