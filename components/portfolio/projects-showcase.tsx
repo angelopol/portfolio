@@ -178,7 +178,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
 
               <div className="flex flex-1 flex-col gap-5 p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="flex items-start gap-3">
                     <button
                       type="button"
                       onClick={() => openProject(project.id)}
@@ -189,7 +189,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     </button>
                     {project.featured && (
                       <span
-                        className="mt-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
+                        className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
                         aria-label="Featured project"
                         title="Featured project"
                       >
@@ -277,7 +277,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               </button>
 
                 <aside className="order-2 flex h-full flex-col border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
-                <div>
+                <div className="flex items-start gap-4">
+                  <div className="min-w-0 flex-1">
                   <p className="section-label">Project details</p>
                     <h3
                       id={`project-modal-title-${selectedProject.id}`}
@@ -285,9 +286,10 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     >
                     {selectedProject.title}
                   </h3>
+                  </div>
                   {selectedProject.featured && (
                       <span
-                        className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
+                        className="mt-12 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
                         aria-label="Featured project"
                         title="Featured project"
                       >
