@@ -32,7 +32,6 @@ const themeFields: Array<{ key: keyof ThemeConfig; label: string }> = [
   { key: "accentSoft", label: "Accent soft" },
   { key: "background", label: "Background" },
   { key: "surface", label: "Surface" },
-  { key: "card", label: "Card" },
   { key: "text", label: "Text" },
   { key: "muted", label: "Muted" },
   { key: "ring", label: "Ring" },

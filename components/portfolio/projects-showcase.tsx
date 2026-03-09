@@ -9,6 +9,7 @@ import {
   FiExternalLink,
   FiGithub,
   FiShare2,
+  FiStar,
   FiX,
 } from "react-icons/fi";
 
@@ -162,7 +163,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                 />
 
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-[var(--color-background)]/80 via-[var(--color-background)]/20 to-transparent p-4">
+                <div className="absolute inset-0 flex items-start justify-end bg-gradient-to-t from-[var(--color-background)]/80 via-[var(--color-background)]/20 to-transparent p-4">
                   <button
                     type="button"
                     onClick={() => openProject(project.id)}
@@ -187,8 +188,12 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
                     </button>
                     {project.featured && (
-                      <span className="mt-3 inline-flex rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">
-                        Featured
+                      <span
+                        className="mt-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
+                        aria-label="Featured project"
+                        title="Featured project"
+                      >
+                        <FiStar className="h-4 w-4 fill-current" />
                       </span>
                     )}
                   </div>
@@ -281,8 +286,12 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     {selectedProject.title}
                   </h3>
                   {selectedProject.featured && (
-                    <span className="mt-4 inline-flex rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">
-                      Featured
+                      <span
+                        className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
+                        aria-label="Featured project"
+                        title="Featured project"
+                      >
+                        <FiStar className="h-4.5 w-4.5 fill-current" />
                     </span>
                   )}
                 </div>
@@ -295,7 +304,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </p>
 
                 <div className="mt-8">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
                     Stack used
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">

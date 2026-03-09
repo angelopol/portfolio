@@ -85,7 +85,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
             <h1 className="font-display max-w-4xl text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl lg:text-7xl">
               {content.home.title}
             </h1>
-            <p className="mt-6 max-w-3xl text-xl text-[var(--color-accent-soft)]">{content.home.subtitle}</p>
+            <p className="mt-6 max-w-3xl text-xl font-bold text-[var(--color-accent-soft)]">{content.home.subtitle}</p>
             <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--color-muted)]">{content.home.description}</p>
 
             <div className="mt-8 flex flex-wrap gap-4">
@@ -131,7 +131,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div>
-                <p className="text-sm uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
+                <p className="text-sm font-bold uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
                   {content.site.role}
                 </p>
                 <h2 className="mt-2 font-display text-3xl font-semibold text-[var(--color-text)]">

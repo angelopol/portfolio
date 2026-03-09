@@ -98,7 +98,7 @@ body {
   }
 
   .section-label {
-    @apply mb-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent-soft)];
+    @apply mb-4 inline-flex rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-accent-soft)];
     border-color: var(--color-border);
     background-color: var(--color-ghost);
   }

@@ -43,7 +43,7 @@ export function ResumePdfPreview({ fileUrl, title }: ResumePdfPreviewProps) {
   const pageWidth = useMemo(() => Math.max(260, containerWidth - 32), [containerWidth]);
 
   return (
-    <div ref={containerRef} className="w-full rounded-[28px] border border-white/10 bg-slate-950/50 p-4 sm:p-6">
+    <div ref={containerRef} className="w-full p-0">
       <Document
         file={fileUrl}
         loading={
@@ -92,7 +92,7 @@ export function ResumePdfPreview({ fileUrl, title }: ResumePdfPreviewProps) {
         </div>
       </Document>
 
-      <p className="mt-4 text-center text-xs uppercase tracking-[0.22em] text-slate-500">
+      <p className="mt-4 text-center text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
         {title}
       </p>
     </div>
