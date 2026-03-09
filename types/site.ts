@@ -64,6 +64,7 @@ export type MediaItem = {
   kind: MediaKind;
   name: string;
   url: string;
+  storageKey?: string;
   mimeType: string;
   size: number;
   uploadedAt: string;

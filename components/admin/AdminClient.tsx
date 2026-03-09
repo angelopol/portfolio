@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   FiCopy,
+  FiClock,
   FiEye,
   FiFileText,
   FiImage,
   FiLogOut,
   FiPlus,
+  FiRotateCcw,
   FiSave,
   FiTrash2,
   FiUploadCloud,
@@ -51,6 +53,19 @@ type ToastMessage = {
   message: string;
 };
 
+type ChangeHistoryEntry = {
+  json: string;
+  label: string;
+  timestamp: string;
+};
+
+type ReorderableListKey = "home.highlights" | "about.skillset" | "about.focusAreas";
+
+type DraggedListItem = {
+  listKey: ReorderableListKey;
+  index: number;
+} | null;
+
 type ConfirmDialog =
   | {
       kind: "delete-media";
@@ -86,6 +101,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   const [status, setStatus] = useState<string | null>(null);
   const [mediaStatus, setMediaStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [uploadingKind, setUploadingKind] = useState<"image" | "document" | null>(null);
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
@@ -93,6 +109,13 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog>(null);
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
+  const [draggedListItem, setDraggedListItem] = useState<DraggedListItem>(null);
+  const [dragOverListItem, setDragOverListItem] = useState<DraggedListItem>(null);
+  const [lastSavedJson, setLastSavedJson] = useState(JSON.stringify(initialContent, null, 2));
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [autoSaveIntervalMs, setAutoSaveIntervalMs] = useState(1800);
+  const [changeHistory, setChangeHistory] = useState<ChangeHistoryEntry[]>([]);
+  const [redoHistory, setRedoHistory] = useState<ChangeHistoryEntry[]>([]);
 
   const imageLibrary = useMemo(
     () => mediaLibrary.filter((item) => item.kind === "image"),
@@ -108,9 +131,41 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     [draft]
   );
 
-  function syncDraft(nextValue: SiteContent) {
+  const hasPendingChanges = rawJson !== lastSavedJson;
+
+  const historyPreview = useMemo(() => changeHistory.slice(-5).reverse(), [changeHistory]);
+
+  function formatTimeStamp() {
+    return new Date().toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }
+
+  function syncDraft(
+    nextValue: SiteContent,
+    options?: { recordHistory?: boolean; historyLabel?: string; clearRedo?: boolean }
+  ) {
+    const nextRawJson = JSON.stringify(nextValue, null, 2);
+
+    if (options?.recordHistory && nextRawJson !== rawJson) {
+      setChangeHistory((currentHistory) => [
+        ...currentHistory.slice(-19),
+        {
+          json: rawJson,
+          label: options.historyLabel ?? "Cambio visual",
+          timestamp: formatTimeStamp(),
+        },
+      ]);
+
+      if (options.clearRedo !== false) {
+        setRedoHistory([]);
+      }
+    }
+
     setDraft(nextValue);
-    setRawJson(JSON.stringify(nextValue, null, 2));
+    setRawJson(nextRawJson);
     setJsonError(null);
     setStatus(null);
   }
@@ -127,6 +182,24 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       removeToast(id);
     }, 3200);
   }
+
+  useEffect(() => {
+    const storedInterval = globalThis.localStorage.getItem("portfolio-autosave-interval");
+
+    if (!storedInterval) {
+      return;
+    }
+
+    const parsedInterval = Number(storedInterval);
+
+    if (!Number.isNaN(parsedInterval)) {
+      setAutoSaveIntervalMs(parsedInterval);
+    }
+  }, []);
+
+  useEffect(() => {
+    globalThis.localStorage.setItem("portfolio-autosave-interval", String(autoSaveIntervalMs));
+  }, [autoSaveIntervalMs]);
 
   useEffect(() => {
     async function loadMediaLibrary() {
@@ -149,13 +222,16 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   }, []);
 
   function handleThemeChange(key: keyof ThemeConfig, value: string) {
-    syncDraft({
-      ...draft,
-      theme: {
-        ...draft.theme,
-        [key]: value,
+    syncDraft(
+      {
+        ...draft,
+        theme: {
+          ...draft.theme,
+          [key]: value,
+        },
       },
-    });
+      { recordHistory: true, historyLabel: `Tema: ${key}` }
+    );
   }
 
   function handleJsonChange(value: string) {
@@ -181,32 +257,38 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   }
 
   function applyProfileImage(url: string) {
-    syncDraft({
-      ...draft,
-      about: {
-        ...draft.about,
-        profileImage: url,
+    syncDraft(
+      {
+        ...draft,
+        about: {
+          ...draft.about,
+          profileImage: url,
+        },
       },
-    });
+      { recordHistory: true, historyLabel: "About: imagen de perfil" }
+    );
     setMediaStatus("Imagen aplicada como foto de perfil. Solo falta guardar los cambios.");
     pushToast("Imagen aplicada como foto de perfil.", "success");
   }
 
   function applyResumeFile(url: string) {
-    syncDraft({
-      ...draft,
-      home: {
-        ...draft.home,
-        secondaryCta: {
-          ...draft.home.secondaryCta,
-          href: url,
+    syncDraft(
+      {
+        ...draft,
+        home: {
+          ...draft.home,
+          secondaryCta: {
+            ...draft.home.secondaryCta,
+            href: url,
+          },
+        },
+        resume: {
+          ...draft.resume,
+          downloadUrl: url,
         },
       },
-      resume: {
-        ...draft.resume,
-        downloadUrl: url,
-      },
-    });
+      { recordHistory: true, historyLabel: "Resume: archivo principal" }
+    );
     setMediaStatus("PDF aplicado como CV principal. Solo falta guardar los cambios.");
     pushToast("PDF aplicado como CV principal.", "success");
   }
@@ -215,13 +297,16 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     field: K,
     value: SiteContent["home"][K]
   ) {
-    syncDraft({
-      ...draft,
-      home: {
-        ...draft.home,
-        [field]: value,
+    syncDraft(
+      {
+        ...draft,
+        home: {
+          ...draft.home,
+          [field]: value,
+        },
       },
-    });
+      { recordHistory: true, historyLabel: `Home: ${String(field)}` }
+    );
   }
 
   function updateHomeCta(
@@ -264,17 +349,82 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       .filter(Boolean);
   }
 
+  function getReorderableList(listKey: ReorderableListKey) {
+    if (listKey === "home.highlights") {
+      return draft.home.highlights;
+    }
+
+    if (listKey === "about.skillset") {
+      return draft.about.skillset;
+    }
+
+    return draft.about.focusAreas;
+  }
+
+  function setReorderableList(listKey: ReorderableListKey, nextValues: string[]) {
+    if (listKey === "home.highlights") {
+      updateHomeField("highlights", nextValues);
+      return;
+    }
+
+    if (listKey === "about.skillset") {
+      updateAboutField("skillset", nextValues);
+      return;
+    }
+
+    updateAboutField("focusAreas", nextValues);
+  }
+
+  function updateReorderableItem(listKey: ReorderableListKey, index: number, value: string) {
+    const nextValues = getReorderableList(listKey).map((item, itemIndex) =>
+      itemIndex === index ? value : item
+    );
+    setReorderableList(listKey, nextValues);
+  }
+
+  function addReorderableItem(listKey: ReorderableListKey, placeholder: string) {
+    setReorderableList(listKey, [...getReorderableList(listKey), placeholder]);
+    pushToast("Elemento añadido al borrador.", "success");
+  }
+
+  function removeReorderableItem(listKey: ReorderableListKey, index: number) {
+    setReorderableList(
+      listKey,
+      getReorderableList(listKey).filter((_, itemIndex) => itemIndex !== index)
+    );
+    pushToast("Elemento eliminado del borrador.", "success");
+  }
+
+  function reorderListItems(
+    listKey: ReorderableListKey,
+    sourceIndex: number,
+    targetIndex: number
+  ) {
+    if (sourceIndex === targetIndex) {
+      return;
+    }
+
+    const nextValues = [...getReorderableList(listKey)];
+    const [movedItem] = nextValues.splice(sourceIndex, 1);
+    nextValues.splice(targetIndex, 0, movedItem);
+    setReorderableList(listKey, nextValues);
+    pushToast("Orden actualizado en el borrador.", "info");
+  }
+
   function updateAboutField<K extends keyof SiteContent["about"]>(
     field: K,
     value: SiteContent["about"][K]
   ) {
-    syncDraft({
-      ...draft,
-      about: {
-        ...draft.about,
-        [field]: value,
+    syncDraft(
+      {
+        ...draft,
+        about: {
+          ...draft.about,
+          [field]: value,
+        },
       },
-    });
+      { recordHistory: true, historyLabel: `About: ${String(field)}` }
+    );
   }
 
   function reorderProjects(sourceId: string, targetId: string) {
@@ -293,20 +443,26 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     const [movedProject] = nextProjects.splice(sourceIndex, 1);
     nextProjects.splice(targetIndex, 0, movedProject);
 
-    syncDraft({
-      ...draft,
-      projects: nextProjects,
-    });
+    syncDraft(
+      {
+        ...draft,
+        projects: nextProjects,
+      },
+      { recordHistory: true, historyLabel: "Projects: reordenar" }
+    );
     pushToast("Orden de proyectos actualizado en el borrador.", "info");
   }
 
   function updateProject(projectId: string, updater: (project: Project) => Project) {
-    syncDraft({
-      ...draft,
-      projects: draft.projects.map((project) =>
-        project.id === projectId ? updater(project) : project
-      ),
-    });
+    syncDraft(
+      {
+        ...draft,
+        projects: draft.projects.map((project) =>
+          project.id === projectId ? updater(project) : project
+        ),
+      },
+      { recordHistory: true, historyLabel: `Project: ${projectId}` }
+    );
   }
 
   function updateProjectField<K extends keyof Project>(
@@ -340,33 +496,66 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       imageLibrary[0]?.url || draft.projects[0]?.image || draft.about.profileImage;
     const timestamp = Date.now();
 
-    syncDraft({
-      ...draft,
-      projects: [
-        ...draft.projects,
-        {
-          id: `project-${timestamp}`,
-          title: "Nuevo proyecto",
-          description: "Describe aquí el proyecto.",
-          stack: ["Next.js"],
-          image: fallbackImage,
-          demoUrl: "",
-          githubUrl: "",
-          featured: false,
-        },
-      ],
-    });
+    syncDraft(
+      {
+        ...draft,
+        projects: [
+          ...draft.projects,
+          {
+            id: `project-${timestamp}`,
+            title: "Nuevo proyecto",
+            description: "Describe aquí el proyecto.",
+            stack: ["Next.js"],
+            image: fallbackImage,
+            demoUrl: "",
+            githubUrl: "",
+            featured: false,
+          },
+        ],
+      },
+      { recordHistory: true, historyLabel: "Projects: nuevo proyecto" }
+    );
     setMediaStatus("Proyecto creado. Completa sus campos y luego guarda los cambios.");
     pushToast("Proyecto creado en el editor visual.", "success");
   }
 
   function removeProject(projectId: string) {
-    syncDraft({
-      ...draft,
-      projects: draft.projects.filter((project) => project.id !== projectId),
-    });
+    syncDraft(
+      {
+        ...draft,
+        projects: draft.projects.filter((project) => project.id !== projectId),
+      },
+      { recordHistory: true, historyLabel: "Projects: eliminar proyecto" }
+    );
     setMediaStatus("Proyecto eliminado del borrador. Solo falta guardar los cambios.");
     pushToast("Proyecto eliminado del borrador.", "success");
+  }
+
+  function undoLastChange() {
+    const previousEntry = changeHistory[changeHistory.length - 1];
+
+    if (!previousEntry) {
+      pushToast("No hay cambios para deshacer.", "info");
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(previousEntry.json) as SiteContent;
+
+      setRedoHistory((currentRedo) => [
+        ...currentRedo.slice(-19),
+        {
+          json: rawJson,
+          label: previousEntry.label,
+          timestamp: formatTimeStamp(),
+        },
+      ]);
+      setChangeHistory((currentHistory) => currentHistory.slice(0, -1));
+      syncDraft(parsed, { recordHistory: false, clearRedo: false });
+      pushToast(`Se deshizo: ${previousEntry.label}.`, "success");
+    } catch {
+      pushToast("No se pudo deshacer el último cambio.", "error");
+    }
   }
 
   async function copyUrl(url: string) {
@@ -531,12 +720,16 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     await handleLogout();
   }
 
-  async function handleSave() {
-    setSaving(true);
+  async function saveContent(parsed: SiteContent, mode: "manual" | "auto") {
+    if (mode === "manual") {
+      setSaving(true);
+    } else {
+      setAutoSaving(true);
+    }
+
     setStatus(null);
 
     try {
-      const parsed = JSON.parse(rawJson) as SiteContent;
       const response = await fetch("/api/admin/content", {
         method: "PUT",
         headers: {
@@ -553,16 +746,48 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       }
 
       setDraft(parsed);
-      setRawJson(JSON.stringify(parsed, null, 2));
+      const nextJson = JSON.stringify(parsed, null, 2);
+      setRawJson(nextJson);
+      setLastSavedJson(nextJson);
+      setLastSavedAt(new Date().toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }));
       setJsonError(null);
-      setStatus("Cambios guardados correctamente.");
-      pushToast("Cambios guardados correctamente.", "success");
+      setStatus(
+        mode === "manual"
+          ? "Cambios guardados correctamente."
+          : "Guardado automático completado."
+      );
+
+      if (mode === "manual") {
+        pushToast("Cambios guardados correctamente.", "success");
+      }
+
       router.refresh();
+    } catch {
+      const errorMessage = "No fue posible guardar. Revisa el JSON y vuelve a intentar.";
+      setStatus(errorMessage);
+      pushToast(
+        mode === "manual" ? errorMessage : "Falló el guardado automático. Revisa el contenido.",
+        "error"
+      );
+    } finally {
+      if (mode === "manual") {
+        setSaving(false);
+      } else {
+        setAutoSaving(false);
+      }
+    }
+  }
+
+  async function handleSave() {
+    try {
+      const parsed = JSON.parse(rawJson) as SiteContent;
+      await saveContent(parsed, "manual");
     } catch {
       setStatus("No fue posible guardar. Revisa el JSON y vuelve a intentar.");
       pushToast("No fue posible guardar. Revisa el JSON y vuelve a intentar.", "error");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -576,6 +801,25 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       setLoggingOut(false);
     }
   }
+
+  useEffect(() => {
+    if (autoSaveIntervalMs === 0 || !hasPendingChanges || jsonError || saving || autoSaving) {
+      return;
+    }
+
+    const timeoutId = globalThis.setTimeout(() => {
+      try {
+        const parsed = JSON.parse(rawJson) as SiteContent;
+        void saveContent(parsed, "auto");
+      } catch {
+        setStatus("El guardado automático se pausó hasta que el JSON vuelva a ser válido.");
+      }
+    }, autoSaveIntervalMs);
+
+    return () => {
+      globalThis.clearTimeout(timeoutId);
+    };
+  }, [autoSaveIntervalMs, autoSaving, hasPendingChanges, jsonError, rawJson, saving]);
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] px-6 py-8 text-white">
@@ -621,6 +865,108 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                 <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white">Autosave activo</p>
+                <p className="text-xs text-slate-400">
+                  {jsonError
+                    ? "Pausado por JSON inválido."
+                    : autoSaveIntervalMs === 0
+                      ? "Desactivado manualmente."
+                    : hasPendingChanges
+                      ? autoSaving
+                        ? "Guardando cambios automáticamente..."
+                        : `Cambios pendientes. Se guardarán automáticamente en ${(
+                            autoSaveIntervalMs / 1000
+                          ).toFixed(autoSaveIntervalMs % 1000 === 0 ? 0 : 1)}s.`
+                      : lastSavedAt
+                        ? `Todo sincronizado. Último guardado a las ${lastSavedAt}.`
+                        : "Sin cambios pendientes."}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2 text-xs text-slate-300">
+                  <FiClock />
+                  <span>Intervalo</span>
+                  <select
+                    value={String(autoSaveIntervalMs)}
+                    onChange={(event) => setAutoSaveIntervalMs(Number(event.target.value))}
+                    className="rounded-xl border border-white/10 bg-slate-950/80 px-2 py-1 text-xs text-white outline-none"
+                  >
+                    <option value="0">Off</option>
+                    <option value="1500">1.5s</option>
+                    <option value="3000">3s</option>
+                    <option value="5000">5s</option>
+                    <option value="10000">10s</option>
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={undoLastChange}
+                  disabled={changeHistory.length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FiRotateCcw />
+                  Undo
+                </button>
+
+                <div
+                  className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
+                    jsonError
+                      ? "bg-rose-500/15 text-rose-100"
+                      : autoSaveIntervalMs === 0
+                        ? "bg-slate-500/20 text-slate-200"
+                        : hasPendingChanges
+                          ? "bg-amber-500/15 text-amber-100"
+                          : "bg-emerald-500/15 text-emerald-100"
+                  }`}
+                >
+                  {jsonError
+                    ? "Pausado"
+                    : autoSaveIntervalMs === 0
+                      ? "Manual"
+                      : hasPendingChanges
+                        ? autoSaving
+                          ? "Guardando"
+                          : "Pendiente"
+                        : "Sincronizado"}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Historial simple</p>
+                  <p className="text-xs text-slate-400">
+                    Últimos cambios visuales. Pendientes por deshacer: {changeHistory.length}. Rehacer guardado: {redoHistory.length}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {historyPreview.length === 0 ? (
+                  <p className="text-xs text-slate-500">Aún no hay cambios en el historial visual.</p>
+                ) : (
+                  historyPreview.map((entry, index) => (
+                    <div
+                      key={`${entry.timestamp}-${index}`}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <span className="text-sm text-slate-200">{entry.label}</span>
+                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        {entry.timestamp}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -799,6 +1145,39 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </p>
                   </div>
 
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="section-label">Preview en vivo</p>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                        Home
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm uppercase tracking-[0.28em] text-[var(--color-accentSoft)]">
+                      {draft.home.eyebrow}
+                    </p>
+                    <h3 className="mt-4 font-display text-3xl font-semibold leading-tight text-white">
+                      {draft.home.title}
+                    </h3>
+                    <p className="mt-4 text-base leading-7 text-slate-300">{draft.home.subtitle}</p>
+                    <p className="mt-4 text-sm leading-7 text-slate-400">{draft.home.description}</p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <span className="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white">
+                        {draft.home.primaryCta.label}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
+                        {draft.home.secondaryCta.label}
+                      </span>
+                    </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                      {draft.home.metrics.map((metric, index) => (
+                        <div key={`${metric.label}-${index}`} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{metric.label}</p>
+                          <p className="mt-2 text-sm font-semibold text-white">{metric.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="grid gap-4">
                     <label className="block">
                       <span className="mb-2 block text-sm font-medium text-slate-200">Eyebrow</span>
@@ -946,15 +1325,75 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       </div>
                     </div>
 
-                    <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <span className="mb-2 block text-sm font-semibold text-white">Highlights</span>
-                      <span className="mb-3 block text-xs text-slate-400">Uno por línea.</span>
-                      <textarea
-                        value={draft.home.highlights.join("\n")}
-                        onChange={(event) => updateHomeField("highlights", updateMultilineList(event.target.value))}
-                        className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                      />
-                    </label>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">Highlights</p>
+                          <p className="text-xs text-slate-400">Arrastra para reordenar.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addReorderableItem("home.highlights", "Nuevo highlight")}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                        >
+                          <FiPlus />
+                          Añadir
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {draft.home.highlights.map((highlight, index) => (
+                          <div
+                            key={`${highlight}-${index}`}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                              setDragOverListItem({ listKey: "home.highlights", index });
+                            }}
+                            onDrop={() => {
+                              if (draggedListItem?.listKey === "home.highlights") {
+                                reorderListItems("home.highlights", draggedListItem.index, index);
+                              }
+                              setDraggedListItem(null);
+                              setDragOverListItem(null);
+                            }}
+                            className={`rounded-2xl border p-3 ${
+                              dragOverListItem?.listKey === "home.highlights" && dragOverListItem.index === index
+                                ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                                : "border-white/10 bg-slate-950/40"
+                            }`}
+                          >
+                            <div
+                              draggable
+                              onDragStart={() => setDraggedListItem({ listKey: "home.highlights", index })}
+                              onDragEnd={() => {
+                                setDraggedListItem(null);
+                                setDragOverListItem(null);
+                              }}
+                              className="grid cursor-grab gap-3 md:grid-cols-[auto_1fr_auto]"
+                            >
+                              <div className="flex items-center rounded-xl border border-dashed border-white/10 px-3 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                drag
+                              </div>
+                              <input
+                                type="text"
+                                value={highlight}
+                                onChange={(event) =>
+                                  updateReorderableItem("home.highlights", index, event.target.value)
+                                }
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeReorderableItem("home.highlights", index)}
+                                className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </section>
 
@@ -964,6 +1403,40 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     <p className="mt-2 text-sm text-slate-400">
                       Controla el perfil, resumen, stack y áreas de enfoque desde el panel.
                     </p>
+                  </div>
+
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="section-label">Preview en vivo</p>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                        About
+                      </span>
+                    </div>
+                    <div className="mt-5 flex gap-4">
+                      <img
+                        src={draft.about.profileImage}
+                        alt="Preview perfil"
+                        className="h-20 w-20 rounded-2xl border border-white/10 object-cover"
+                      />
+                      <div>
+                        <h3 className="font-display text-2xl font-semibold leading-tight text-white">
+                          {draft.about.headline}
+                        </h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-300">
+                          {draft.about.summary[0] ?? "Añade un resumen para verlo aquí."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {draft.about.skillset.slice(0, 8).map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="grid gap-4">
@@ -1036,15 +1509,75 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <span className="mb-2 block text-sm font-semibold text-white">Skillset</span>
-                        <span className="mb-3 block text-xs text-slate-400">Una skill por línea.</span>
-                        <textarea
-                          value={draft.about.skillset.join("\n")}
-                          onChange={(event) => updateAboutField("skillset", updateMultilineList(event.target.value))}
-                          className="min-h-[180px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                        />
-                      </label>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-white">Skillset</p>
+                            <p className="text-xs text-slate-400">Arrastra para reordenar.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addReorderableItem("about.skillset", "Nueva skill")}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                          >
+                            <FiPlus />
+                            Añadir
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {draft.about.skillset.map((skill, index) => (
+                            <div
+                              key={`${skill}-${index}`}
+                              onDragOver={(event) => {
+                                event.preventDefault();
+                                setDragOverListItem({ listKey: "about.skillset", index });
+                              }}
+                              onDrop={() => {
+                                if (draggedListItem?.listKey === "about.skillset") {
+                                  reorderListItems("about.skillset", draggedListItem.index, index);
+                                }
+                                setDraggedListItem(null);
+                                setDragOverListItem(null);
+                              }}
+                              className={`rounded-2xl border p-3 ${
+                                dragOverListItem?.listKey === "about.skillset" && dragOverListItem.index === index
+                                  ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                                  : "border-white/10 bg-slate-950/40"
+                              }`}
+                            >
+                              <div
+                                draggable
+                                onDragStart={() => setDraggedListItem({ listKey: "about.skillset", index })}
+                                onDragEnd={() => {
+                                  setDraggedListItem(null);
+                                  setDragOverListItem(null);
+                                }}
+                                className="grid cursor-grab gap-3 md:grid-cols-[auto_1fr_auto]"
+                              >
+                                <div className="flex items-center rounded-xl border border-dashed border-white/10 px-3 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                  drag
+                                </div>
+                                <input
+                                  type="text"
+                                  value={skill}
+                                  onChange={(event) =>
+                                    updateReorderableItem("about.skillset", index, event.target.value)
+                                  }
+                                  className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeReorderableItem("about.skillset", index)}
+                                  className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                                >
+                                  <FiTrash2 />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
                       <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
                         <span className="mb-2 block text-sm font-semibold text-white">Toolset</span>
@@ -1057,15 +1590,75 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       </label>
                     </div>
 
-                    <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <span className="mb-2 block text-sm font-semibold text-white">Focus areas</span>
-                      <span className="mb-3 block text-xs text-slate-400">Una línea por área.</span>
-                      <textarea
-                        value={draft.about.focusAreas.join("\n")}
-                        onChange={(event) => updateAboutField("focusAreas", updateMultilineList(event.target.value))}
-                        className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                      />
-                    </label>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">Focus areas</p>
+                          <p className="text-xs text-slate-400">Arrastra para reordenar.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addReorderableItem("about.focusAreas", "Nueva área de enfoque")}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                        >
+                          <FiPlus />
+                          Añadir
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {draft.about.focusAreas.map((focusArea, index) => (
+                          <div
+                            key={`${focusArea}-${index}`}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                              setDragOverListItem({ listKey: "about.focusAreas", index });
+                            }}
+                            onDrop={() => {
+                              if (draggedListItem?.listKey === "about.focusAreas") {
+                                reorderListItems("about.focusAreas", draggedListItem.index, index);
+                              }
+                              setDraggedListItem(null);
+                              setDragOverListItem(null);
+                            }}
+                            className={`rounded-2xl border p-3 ${
+                              dragOverListItem?.listKey === "about.focusAreas" && dragOverListItem.index === index
+                                ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                                : "border-white/10 bg-slate-950/40"
+                            }`}
+                          >
+                            <div
+                              draggable
+                              onDragStart={() => setDraggedListItem({ listKey: "about.focusAreas", index })}
+                              onDragEnd={() => {
+                                setDraggedListItem(null);
+                                setDragOverListItem(null);
+                              }}
+                              className="grid cursor-grab gap-3 md:grid-cols-[auto_1fr_auto]"
+                            >
+                              <div className="flex items-center rounded-xl border border-dashed border-white/10 px-3 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                drag
+                              </div>
+                              <input
+                                type="text"
+                                value={focusArea}
+                                onChange={(event) =>
+                                  updateReorderableItem("about.focusAreas", index, event.target.value)
+                                }
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeReorderableItem("about.focusAreas", index)}
+                                className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -1089,6 +1682,53 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                   <FiPlus />
                   Nuevo proyecto
                 </button>
+              </div>
+
+              <div className="mt-6 rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="section-label">Preview en vivo</p>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                    Projects
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {draft.projects.map((project) => (
+                    <article
+                      key={`preview-${project.id}`}
+                      className="overflow-hidden rounded-[24px] border border-white/10 bg-white/5"
+                    >
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        className="aspect-[16/10] h-auto w-full object-cover"
+                      />
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-base font-semibold text-white">{project.title}</h3>
+                          {project.featured && (
+                            <span className="rounded-full bg-[var(--color-accent)]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accentSoft)]">
+                              Featured
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                          {project.description}
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {project.stack.slice(0, 4).map((item) => (
+                            <span
+                              key={`${project.id}-${item}`}
+                              className="rounded-full border border-white/10 bg-slate-950/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
 
               <div className="mt-6 space-y-6">
@@ -1288,11 +1928,11 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving || Boolean(jsonError)}
+                  disabled={saving || autoSaving || Boolean(jsonError)}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FiSave />
-                  {saving ? "Guardando..." : "Guardar cambios"}
+                  {saving ? "Guardando..." : autoSaving ? "Autosaving..." : "Guardar cambios"}
                 </button>
               </div>
 

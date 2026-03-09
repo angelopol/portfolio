@@ -13,6 +13,7 @@ import {
   getUploadFolder,
   removeMediaItemById,
 } from "@/lib/media-library";
+import { isS3Configured, uploadPublicFileToS3 } from "@/lib/s3";
 import type { MediaItem, MediaKind } from "@/types/site";
 
 function ensureAdmin() {
@@ -58,20 +59,35 @@ export async function POST(request: Request) {
   }
 
   const storedFileName = createStoredFileName(file.name);
-  const uploadFolder = getUploadFolder(kind as MediaKind, mimeType);
-  const uploadPath = path.join(uploadFolder, storedFileName);
-  const uploadUrl = getPublicUploadUrl(kind as MediaKind, storedFileName, mimeType);
-
-  await fs.mkdir(uploadFolder, { recursive: true });
-
   const fileBuffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(uploadPath, fileBuffer);
+
+  let uploadUrl = getPublicUploadUrl(kind as MediaKind, storedFileName, mimeType);
+  let storageKey: string | undefined;
+
+  if (isS3Configured()) {
+    const uploadedFile = await uploadPublicFileToS3({
+      fileName: file.name,
+      buffer: fileBuffer,
+      mimeType,
+      kind: kind as MediaKind,
+    });
+
+    uploadUrl = uploadedFile.url;
+    storageKey = uploadedFile.storageKey;
+  } else {
+    const uploadFolder = getUploadFolder(kind as MediaKind, mimeType);
+    const uploadPath = path.join(uploadFolder, storedFileName);
+
+    await fs.mkdir(uploadFolder, { recursive: true });
+    await fs.writeFile(uploadPath, fileBuffer);
+  }
 
   const item: MediaItem = {
     id: `${Date.now()}-${storedFileName}`,
     kind: kind as MediaKind,
     name: file.name,
     url: uploadUrl,
+    storageKey,
     mimeType,
     size: file.size,
     uploadedAt: new Date().toISOString(),
