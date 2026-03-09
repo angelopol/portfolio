@@ -943,8 +943,6 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       if (mode === "manual") {
         pushToast("Cambios guardados correctamente.", "success");
       }
-
-      router.refresh();
     } catch {
       const errorMessage = "No fue posible guardar. Revisa el JSON y vuelve a intentar.";
       setStatus(errorMessage);
