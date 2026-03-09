@@ -47,6 +47,7 @@ export type Project = {
   description: string;
   stack: string[];
   image: string;
+  gallery?: string[];
   demoUrl?: string;
   githubUrl?: string;
   featured?: boolean;

@@ -12,8 +12,9 @@ import {
   FiMapPin,
 } from "react-icons/fi";
 
+import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
 import { ResumePdfPreview } from "@/components/portfolio/resume-pdf-preview";
-import type { Project, SiteContent } from "@/types/site";
+import type { SiteContent } from "@/types/site";
 
 const sectionLinks = [
   { href: "#home", label: "Home" },
@@ -30,74 +31,6 @@ const socialIcons: Record<string, IconType> = {
 
 function getSocialIcon(label: string): IconType {
   return socialIcons[label.toLowerCase()] ?? FiExternalLink;
-}
-
-function ProjectCard({ project, priority }: { project: Project; priority?: boolean }) {
-  return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--color-card)]/90 shadow-glow transition duration-300 hover:-translate-y-1 hover:border-[var(--color-accent)]/60">
-      <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
-        <Image
-          src={project.image}
-          alt={project.title}
-          fill
-          priority={priority}
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-          className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
-        />
-      </div>
-
-      <div className="flex flex-1 flex-col gap-5 p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-display text-2xl font-semibold text-white">{project.title}</h3>
-            {project.featured && (
-              <span className="mt-3 inline-flex rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">
-                Featured
-              </span>
-            )}
-          </div>
-        </div>
-
-        <p className="text-sm leading-7 text-slate-300">{project.description}</p>
-
-        <div className="flex flex-wrap gap-2">
-          {project.stack.map((item) => (
-            <span
-              key={`${project.id}-${item}`}
-              className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-auto flex flex-wrap gap-3 pt-2">
-          {project.demoUrl && (
-            <a
-              href={project.demoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              <FiExternalLink />
-              Demo
-            </a>
-          )}
-          {project.githubUrl && (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
-            >
-              <FiGithub />
-              Code
-            </a>
-          )}
-        </div>
-      </div>
-    </article>
-  );
 }
 
 export function SiteShell({ content }: { content: SiteContent }) {
@@ -327,11 +260,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {content.projects.map((project, index) => (
-              <ProjectCard key={project.id} project={project} priority={index < 2} />
-            ))}
-          </div>
+          <ProjectsShowcase projects={content.projects} />
         </section>
 
         <section id="resume" className="section-shell py-8 lg:py-16">
