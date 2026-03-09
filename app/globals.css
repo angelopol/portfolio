@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-background: #09090f;
+  --color-surface: #111322;
+  --color-card: #171a2b;
+  --color-text: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-accent: #8b5cf6;
+  --color-accent-soft: #c4b5fd;
+  --color-ring: #8b5cf6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.18), transparent 24%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 22%),
+    var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans), sans-serif;
+}
+
+.react-pdf__Page {
+  width: 100% !important;
+}
+
+.react-pdf__Page__canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.react-pdf__Page__textContent,
+.react-pdf__Page__annotations {
+  inset: 0;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
+}
+
+@layer components {
+  .section-shell {
+    @apply mx-auto w-full max-w-7xl px-6 lg:px-8;
+  }
+
+  .section-label {
+    @apply mb-4 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent-soft)];
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-semibold tracking-tight text-white md:text-5xl;
+  }
+
+  .glass-panel {
+    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur;
+  }
+}

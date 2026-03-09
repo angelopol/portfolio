@@ -1,0 +1,177 @@
+{
+  "site": {
+    "name": "Angelo Polgrossi",
+    "initials": "AP",
+    "role": "Backend & Full-Stack Developer",
+    "email": "angelopolgrossi@gmail.com",
+    "location": "Valencia, Venezuela"
+  },
+  "theme": {
+    "accent": "#8b5cf6",
+    "accentSoft": "#c4b5fd",
+    "background": "#09090f",
+    "surface": "#111322",
+    "card": "#171a2b",
+    "text": "#f8fafc",
+    "muted": "#94a3b8",
+    "ring": "#8b5cf6"
+  },
+  "home": {
+    "eyebrow": "Portafolio dinámico · Next.js + TypeScript",
+    "title": "Desarrollo productos web sólidos, escalables y listos para negocio.",
+    "subtitle": "Backend first, con visión de producto y foco en performance.",
+    "description": "Soy Angelo Polgrossi, estudiante avanzado de ingeniería en computación y desarrollador enfocado en backend, arquitectura web y soluciones integradas. Trabajo con productos que necesitan velocidad, estabilidad y una experiencia moderna para el usuario final.",
+    "availability": "Disponible para nuevos proyectos y colaboraciones remotas.",
+    "location": "Valencia, Venezuela · UTC-4",
+    "primaryCta": {
+      "label": "Ver proyectos",
+      "href": "#projects"
+    },
+    "secondaryCta": {
+      "label": "Descargar CV",
+      "href": "/assets/CV - Angelo Polgrossi - English.pdf"
+    },
+    "metrics": [
+      {
+        "label": "Stack principal",
+        "value": "Laravel · React · Next.js"
+      },
+      {
+        "label": "Enfoque",
+        "value": "Backend, APIs y plataformas cloud"
+      },
+      {
+        "label": "Experiencia",
+        "value": "Web apps, microcontroladores y sistemas internos"
+      }
+    ],
+    "highlights": [
+      "Arquitectura backend y APIs escalables",
+      "Integración entre frontend, backend y servicios cloud",
+      "Automatización, bases de datos y software especializado"
+    ]
+  },
+  "about": {
+    "headline": "Combino backend, producto y ejecución para convertir ideas en software útil.",
+    "summary": [
+      "He desarrollado plataformas web, sistemas administrativos, soluciones para microcomputadoras y herramientas internas para operaciones reales de negocio.",
+      "Me siento especialmente cómodo diseñando bases de datos, APIs, flujos de autenticación, paneles administrativos y procesos donde la confiabilidad es clave.",
+      "Aunque mi fortaleza principal está en backend, también puedo integrarme con frontend moderno para entregar productos completos de punta a punta."
+    ],
+    "skillset": [
+      "Next.js",
+      "React",
+      "TypeScript",
+      "Laravel",
+      "Node.js",
+      "PHP",
+      "Python",
+      "Java",
+      "MySQL",
+      "PostgreSQL",
+      "SQL Server",
+      "Tailwind CSS"
+    ],
+    "toolset": [
+      "Docker",
+      "GitHub",
+      "Postman",
+      "AWS",
+      "Linux",
+      "Nginx",
+      "Figma",
+      "VS Code",
+      "Arduino",
+      "Jupyter"
+    ],
+    "focusAreas": [
+      "Diseño de APIs y lógica de negocio",
+      "Dashboards y paneles administrativos",
+      "Integraciones con servicios externos",
+      "Sistemas híbridos online/offline"
+    ],
+    "profileImage": "/assets/profile.jpeg"
+  },
+  "projects": [
+    {
+      "id": "ezpass",
+      "title": "EZPASS",
+      "description": "Plataforma web y red de microcomputadoras para contabilidad y control de acceso. Integración con Laravel, Python, OpenCV, MySQL y AWS, incluyendo sincronización offline.",
+      "stack": ["Laravel", "Python", "OpenCV", "MySQL", "AWS"],
+      "image": "/assets/Projects/EZPASSALL.png",
+      "demoUrl": "https://ezpass.cloud/",
+      "featured": true
+    },
+    {
+      "id": "coleabg",
+      "title": "Colegio de Abogados del Estado Carabobo",
+      "description": "Sitio web para consultas de facturación de agremiados con PHP y SQL Server, orientado a procesos administrativos reales.",
+      "stack": ["PHP", "Bootstrap", "SQL Server"],
+      "image": "/assets/Projects/COLEABGALL.png",
+      "demoUrl": "https://coleabg.com/",
+      "githubUrl": "https://github.com/angelopol/ColeabgWebPage"
+    },
+    {
+      "id": "soulbeat",
+      "title": "SOULBEAT",
+      "description": "Participación como backend developer. Diseño de base de datos, modelos, migraciones y mensajería en tiempo real con Pusher dentro de un flujo colaborativo XP.",
+      "stack": ["Laravel", "MySQL", "Pusher", "Sockets"],
+      "image": "/assets/Projects/SOULBEATALL.png",
+      "demoUrl": "https://soulbeat-main-aycgth.laravel.cloud/login",
+      "githubUrl": "https://github.com/angelopol/Soulbeat"
+    },
+    {
+      "id": "financy",
+      "title": "FINANCY",
+      "description": "Aplicación web de finanzas personales adaptada al mercado venezolano, construida con Laravel, React, Inertia y Tailwind CSS.",
+      "stack": ["Laravel", "React", "Inertia", "Tailwind"],
+      "image": "/assets/Projects/FINANCYALL.png",
+      "demoUrl": "https://financy-main-sprvyq.laravel.cloud",
+      "githubUrl": "https://github.com/angelopol/financy",
+      "featured": true
+    },
+    {
+      "id": "bistrot",
+      "title": "Bistrot Chef Remy",
+      "description": "Backend en Node.js y Express con autenticación, estructura administrativa y coordinación backend/frontend bajo Scrum.",
+      "stack": ["Node.js", "Express", "Authentication"],
+      "image": "/assets/Projects/BISTROTALL.png",
+      "githubUrl": "https://github.com/angelopol/bistrot"
+    },
+    {
+      "id": "carnetapp",
+      "title": "Carnet App",
+      "description": "Generación de carnets para miembros del colegio usando Python, OpenCV, Tkinter y MySQL.",
+      "stack": ["Python", "OpenCV", "Tkinter", "MySQL"],
+      "image": "/assets/Projects/CARNETAPPALL.png",
+      "githubUrl": "https://github.com/angelopol/ColeabgCarnetApp"
+    },
+    {
+      "id": "inventory",
+      "title": "Inventory",
+      "description": "Aplicación de inventario ligera desarrollada con Python, Flet y SQLite.",
+      "stack": ["Python", "Flet", "SQLite"],
+      "image": "/assets/Projects/INVENTORYALL.png",
+      "githubUrl": "https://github.com/angelopol/inventory"
+    }
+  ],
+  "socials": [
+    {
+      "label": "GitHub",
+      "href": "https://github.com/angelopol"
+    },
+    {
+      "label": "LinkedIn",
+      "href": "https://www.linkedin.com/in/angelopolgrossi"
+    }
+  ],
+  "resume": {
+    "title": "CV y perfil profesional",
+    "description": "Mantén siempre disponible una versión descargable del CV mientras el portafolio comunica experiencia, stack y proyectos destacados.",
+    "previewTitle": "Vista de CV para desktop",
+    "previewText": "En escritorio se muestra una vista embebida. En móvil, algunos navegadores descargan el PDF automáticamente, por eso la experiencia se optimiza con acciones directas.",
+    "downloadUrl": "/assets/CV - Angelo Polgrossi - English.pdf",
+    "openLabel": "Abrir CV",
+    "downloadLabel": "Descargar CV"
+  }
+}
