@@ -1,6 +1,5 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { IconType } from "react-icons";
 import {
@@ -13,6 +12,7 @@ import {
   FiMapPin,
 } from "react-icons/fi";
 
+import { FloatingNav } from "@/components/portfolio/floating-nav";
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
 import type { SiteContent } from "@/types/site";
 
@@ -27,13 +27,6 @@ const ResumePdfPreview = dynamic(
     ),
   }
 );
-
-const sectionLinks = [
-  { href: "#home", label: "Home" },
-  { href: "#about", label: "About" },
-  { href: "#projects", label: "Projects" },
-  { href: "#resume", label: "Resume" },
-];
 
 const socialIcons: Record<string, IconType> = {
   github: FiGithub,
@@ -77,38 +70,10 @@ export function SiteShell({ content }: { content: SiteContent }) {
         ))}
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(9,9,15,0.72)] backdrop-blur-xl">
-        <div className="section-shell flex h-20 items-center justify-between gap-6">
-          <Link href="/" className="font-display text-lg font-semibold tracking-[0.32em] text-white">
-            {content.site.initials}
-          </Link>
-
-          <nav className="hidden items-center gap-6 md:flex">
-            {sectionLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-slate-300 transition hover:text-white"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
-          <a
-            href={content.resume.downloadUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
-          >
-            <FiDownload />
-            CV
-          </a>
-        </div>
-      </header>
+      <FloatingNav initials={content.site.initials} resumeUrl={content.resume.downloadUrl} />
 
       <main>
-        <section id="home" className="section-shell grid gap-10 py-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-16">
+        <section id="home" className="section-shell grid gap-10 pt-28 pb-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-32 lg:pb-16">
           <div>
             <span className="section-label">{content.home.eyebrow}</span>
             <h1 className="font-display max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-7xl">
