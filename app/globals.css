@@ -11,6 +11,12 @@
   --color-accent: #0ea5a4;
   --color-accent-soft: #7dd3fc;
   --color-ring: #22c55e;
+  --color-border: rgba(248, 250, 252, 0.14);
+  --color-border-strong: rgba(248, 250, 252, 0.26);
+  --color-ghost: rgba(248, 250, 252, 0.06);
+  --color-ghost-strong: rgba(248, 250, 252, 0.1);
+  --color-surface-soft: rgba(10, 33, 48, 0.82);
+  --color-overlay: rgba(6, 19, 31, 0.9);
 }
 
 html {
@@ -92,7 +98,9 @@ body {
   }
 
   .section-label {
-    @apply mb-4 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent-soft)];
+    @apply mb-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent-soft)];
+    border-color: var(--color-border);
+    background-color: var(--color-ghost);
   }
 
   .section-title {
@@ -100,6 +108,8 @@ body {
   }
 
   .glass-panel {
-    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur;
+    @apply rounded-3xl border backdrop-blur;
+    border-color: var(--color-border);
+    background-color: var(--color-surface-soft);
   }
 }

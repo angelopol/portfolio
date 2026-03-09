@@ -50,12 +50,12 @@ export function FloatingNav({
         }`}
       >
         <div
-          className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-white/10 px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8"
-          style={{ backgroundColor: "color-mix(in srgb, var(--color-surface) 86%, transparent)" }}
+          className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-[var(--color-border)] px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8"
+          style={{ backgroundColor: "var(--color-surface-soft)" }}
         >
           <Link
             href="/"
-            className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-display text-base font-semibold tracking-[0.32em] text-[var(--color-text)] transition hover:bg-white/10"
+            className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 font-display text-base font-semibold tracking-[0.32em] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
           >
             {initials}
           </Link>
@@ -65,7 +65,7 @@ export function FloatingNav({
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-full px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:bg-white/5 hover:text-[var(--color-text)]"
+                className="rounded-full px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:bg-[var(--color-ghost)] hover:text-[var(--color-text)]"
               >
                 {link.label}
               </a>
@@ -76,7 +76,7 @@ export function FloatingNav({
             href={resumeUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/25 hover:bg-white/10"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
           >
             <FiDownload />
             CV

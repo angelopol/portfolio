@@ -21,7 +21,7 @@ const ResumePdfPreview = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-8 text-sm text-[var(--color-muted)]">
+      <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-8 text-sm text-[var(--color-muted)]">
         Loading resume preview...
       </div>
     ),
@@ -48,6 +48,12 @@ export function SiteShell({ content }: { content: SiteContent }) {
     "--color-accent": content.theme.accent,
     "--color-accent-soft": content.theme.accentSoft,
     "--color-ring": content.theme.ring,
+    "--color-border": "color-mix(in srgb, var(--color-text) 14%, transparent)",
+    "--color-border-strong": "color-mix(in srgb, var(--color-text) 26%, transparent)",
+    "--color-ghost": "color-mix(in srgb, var(--color-text) 6%, transparent)",
+    "--color-ghost-strong": "color-mix(in srgb, var(--color-text) 10%, transparent)",
+    "--color-surface-soft": "color-mix(in srgb, var(--color-surface) 72%, var(--color-background))",
+    "--color-overlay": "color-mix(in srgb, var(--color-background) 90%, transparent)",
   } as CSSProperties;
 
   const currentYear = new Date().getFullYear();
@@ -94,7 +100,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 href={content.home.secondaryCta.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
               >
                 <FiDownload />
                 {content.home.secondaryCta.label}
@@ -103,7 +109,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {content.home.metrics.map((item) => (
-                <div key={item.label} className="glass-panel border border-white/10 p-4">
+                <div key={item.label} className="glass-panel p-4">
                   <p className="text-sm text-[var(--color-muted)]">{item.label}</p>
                   <p className="mt-2 text-base font-semibold text-[var(--color-text)]">{item.value}</p>
                 </div>
@@ -111,9 +117,9 @@ export function SiteShell({ content }: { content: SiteContent }) {
             </div>
           </div>
 
-          <div className="glass-panel border border-white/10 p-6 shadow-glow">
+          <div className="glass-panel p-6 shadow-glow">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-white/10 bg-white/5 sm:h-32 sm:w-32">
+              <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-ghost)] sm:h-32 sm:w-32">
                 <Image
                   src={content.about.profileImage}
                   alt={content.site.name}
@@ -143,7 +149,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="mt-8 space-y-3">
               {content.home.highlights.map((item) => (
-                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--color-text)]">
+                <div key={item} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-3 text-sm text-[var(--color-text)]">
                   {item}
                 </div>
               ))}
@@ -159,7 +165,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
                     href={social.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                   >
                     <Icon />
                     {social.label}
@@ -172,7 +178,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
         <section id="about" className="section-shell py-8 lg:py-16">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="glass-panel border border-white/10 p-8 shadow-glow">
+            <div className="glass-panel p-8 shadow-glow">
               <span className="section-label">About</span>
               <h2 className="section-title max-w-3xl">{content.about.headline}</h2>
 
@@ -184,13 +190,13 @@ export function SiteShell({ content }: { content: SiteContent }) {
             </div>
 
             <div className="space-y-8">
-              <div className="glass-panel border border-white/10 p-8">
+              <div className="glass-panel p-8">
                 <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Focus areas</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.focusAreas.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm text-[var(--color-text)]"
+                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -198,13 +204,13 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 </div>
               </div>
 
-              <div className="glass-panel border border-white/10 p-8">
+              <div className="glass-panel p-8">
                 <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tech stack</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.skillset.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
+                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -212,13 +218,13 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 </div>
               </div>
 
-              <div className="glass-panel border border-white/10 p-8">
+              <div className="glass-panel p-8">
                 <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tools</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.toolset.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
+                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -242,7 +248,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
         <section id="resume" className="section-shell py-8 lg:py-16">
           <div className="grid items-start gap-8 xl:grid-cols-[0.8fr_1.2fr]">
-            <div className="glass-panel border border-white/10 p-8 shadow-glow">
+            <div className="glass-panel p-8 shadow-glow">
               <span className="section-label">Resume</span>
               <h2 className="section-title">{content.resume.title}</h2>
               <p className="mt-6 text-base leading-8 text-[var(--color-muted)]">{content.resume.description}</p>
@@ -260,20 +266,20 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 <a
                   href={content.resume.downloadUrl}
                   download
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                 >
                   <FiDownload />
                   {content.resume.downloadLabel}
                 </a>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-7 text-[var(--color-muted)]">
+              <div className="mt-8 rounded-3xl border border-dashed border-[var(--color-border)] bg-[var(--color-ghost)] p-5 text-sm leading-7 text-[var(--color-muted)]">
                 <p className="font-semibold text-[var(--color-text)]">{content.resume.previewTitle}</p>
                 <p className="mt-2">{content.resume.previewText}</p>
               </div>
             </div>
 
-            <div className="glass-panel border border-white/10 p-4 shadow-glow sm:p-6">
+            <div className="glass-panel p-4 shadow-glow sm:p-6">
               <ResumePdfPreview
                 fileUrl={content.resume.downloadUrl}
                 title={content.resume.title}
@@ -284,7 +290,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
       </main>
 
       <footer className="section-shell py-12">
-        <div className="glass-panel flex flex-col gap-4 border border-white/10 px-6 py-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between">
+        <div className="glass-panel flex flex-col gap-4 px-6 py-6 text-sm text-[var(--color-muted)] md:flex-row md:items-center md:justify-between">
           <div>
             <p className="font-semibold text-[var(--color-text)]">{content.site.name}</p>
             <p className="mt-1">{content.site.role}</p>
@@ -297,7 +303,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 href={social.href}
                 target="_blank"
                 rel="noreferrer"
-                className="transition hover:text-white"
+                className="transition hover:text-[var(--color-text)]"
               >
                 {social.label}
               </a>

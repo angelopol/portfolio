@@ -66,7 +66,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setSelectedProjectId(null);
+        closeProject();
         return;
       }
 
@@ -148,14 +148,11 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
     <>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, index) => (
-          <button
+          <article
             key={project.id}
-            type="button"
-            onClick={() => openProject(project.id)}
-            className="group text-left"
+            className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)] shadow-glow transition duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface)]/90"
           >
-            <article className="flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--color-card)]/90 shadow-glow transition duration-300 hover:-translate-y-1 hover:border-[var(--color-accent)]/60">
-              <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
+              <div className="relative aspect-[16/10] overflow-hidden bg-[var(--color-ghost)]">
                 <Image
                   src={project.image}
                   alt={project.title}
@@ -164,12 +161,31 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                   className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                 />
+
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-[var(--color-background)]/80 via-[var(--color-background)]/20 to-transparent p-4">
+                  <button
+                    type="button"
+                    onClick={() => openProject(project.id)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
+                    aria-label={`Open ${project.title} project modal`}
+                    title="Open project preview"
+                  >
+                    <FiExternalLink />
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-1 flex-col gap-5 p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
+                    <button
+                      type="button"
+                      onClick={() => openProject(project.id)}
+                      className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-background)]"
+                      aria-label={`Open ${project.title} project modal`}
+                    >
+                      <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
+                    </button>
                     {project.featured && (
                       <span className="mt-3 inline-flex rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">
                         Featured
@@ -184,7 +200,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   {project.stack.map((item) => (
                     <span
                       key={`${project.id}-${item}`}
-                      className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-[var(--color-text)]"
+                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-3 py-1 text-xs font-medium text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -192,41 +208,76 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </div>
 
                 <div className="mt-auto flex justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void shareProject(project.id);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
-                  >
-                    <FiShare2 />
-                    Share
-                  </button>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {project.demoUrl && (
+                      <a
+                        href={project.demoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                      >
+                        <FiExternalLink />
+                        Demo
+                      </a>
+                    )}
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
+                      >
+                        <FiGithub />
+                        GitHub
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void shareProject(project.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
+                    >
+                      <FiShare2 />
+                      Share
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>
-          </button>
         ))}
       </div>
 
       {selectedProject && (
-        <div className="fixed inset-0 z-[80] bg-slate-950/95 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-[80] bg-[var(--color-overlay)] backdrop-blur-sm"
+            onClick={closeProject}
+          >
           <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-4">
-            <div className="relative grid h-full w-full max-w-[1700px] overflow-hidden rounded-[32px] border border-white/10 bg-[var(--color-surface)] shadow-2xl lg:grid-cols-[360px_minmax(0,1fr)]">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`project-modal-title-${selectedProject.id}`}
+                aria-describedby={`project-modal-description-${selectedProject.id}`}
+                className="relative grid h-full w-full max-w-[1700px] overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl lg:grid-cols-[360px_minmax(0,1fr)]"
+                onClick={(event) => event.stopPropagation()}
+              >
               <button
                 type="button"
                 onClick={closeProject}
-                className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-slate-950/70 text-[var(--color-text)] transition hover:bg-white/10"
-                aria-label="Close project"
+                  className="absolute right-4 top-4 z-20 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+                  aria-label={`Close ${selectedProject.title} project dialog`}
+                  title="Close project"
               >
                 <FiX />
+                  <span className="hidden text-sm font-semibold sm:inline">Close</span>
               </button>
 
-              <aside className="order-2 flex h-full flex-col border-t border-white/10 bg-[var(--color-card)]/60 p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
+                <aside className="order-2 flex h-full flex-col border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
                 <div>
                   <p className="section-label">Project details</p>
-                  <h3 className="font-display text-3xl font-semibold text-[var(--color-text)]">
+                    <h3
+                      id={`project-modal-title-${selectedProject.id}`}
+                      className="font-display text-3xl font-semibold text-[var(--color-text)]"
+                    >
                     {selectedProject.title}
                   </h3>
                   {selectedProject.featured && (
@@ -236,7 +287,10 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   )}
                 </div>
 
-                <p className="mt-6 text-sm leading-8 text-[var(--color-muted)]">
+                <p
+                  id={`project-modal-description-${selectedProject.id}`}
+                  className="mt-6 text-sm leading-8 text-[var(--color-muted)]"
+                >
                   {selectedProject.description}
                 </p>
 
@@ -248,7 +302,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     {selectedProject.stack.map((item) => (
                       <span
                         key={`${selectedProject.id}-modal-${item}`}
-                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
+                        className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
                       >
                         {item}
                       </span>
@@ -260,7 +314,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   <button
                     type="button"
                     onClick={() => void shareProject(selectedProject.id)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                   >
                     <FiShare2 />
                     Share project
@@ -281,7 +335,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       href={selectedProject.githubUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                     >
                       <FiGithub />
                       Source code
@@ -290,8 +344,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </div>
               </aside>
 
-              <section className="order-1 flex min-h-[52vh] flex-col bg-slate-950 lg:order-2">
-                <div className="relative flex-1 overflow-hidden bg-black">
+              <section className="order-1 flex min-h-[52vh] flex-col bg-[var(--color-background)] lg:order-2">
+                <div className="relative flex-1 overflow-hidden bg-[var(--color-background)]">
                   <Image
                     src={slides[activeSlideIndex]}
                     alt={`${selectedProject.title} preview ${activeSlideIndex + 1}`}
@@ -306,7 +360,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       <button
                         type="button"
                         onClick={showPreviousSlide}
-                        className="absolute left-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/70 text-white transition hover:bg-white/10"
+                        className="absolute left-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
                         aria-label="Previous image"
                       >
                         <FiChevronLeft />
@@ -314,7 +368,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       <button
                         type="button"
                         onClick={showNextSlide}
-                        className="absolute right-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/70 text-white transition hover:bg-white/10"
+                        className="absolute right-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
                         aria-label="Next image"
                       >
                         <FiChevronRight />
@@ -323,9 +377,9 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   )}
                 </div>
 
-                <div className="border-t border-white/10 bg-slate-950/80 p-4">
+                <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
                   <div className="flex items-center justify-between gap-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
                       {slides.length > 1
                         ? `Image ${activeSlideIndex + 1} of ${slides.length}`
                         : "Project preview"}
@@ -340,7 +394,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                             className={`relative h-14 w-20 overflow-hidden rounded-2xl border transition ${
                               index === activeSlideIndex
                                 ? "border-[var(--color-accent)]"
-                                : "border-white/10 opacity-70 hover:opacity-100"
+                                : "border-[var(--color-border)] opacity-70 hover:border-[var(--color-border-strong)] hover:opacity-100"
                             }`}
                             aria-label={`Open image ${index + 1}`}
                           >
