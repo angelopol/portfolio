@@ -10,7 +10,7 @@ import {
 export async function POST(request: Request) {
   if (!isAdminConfigured()) {
     return NextResponse.json(
-      { error: "Define PORTFOLIO_ADMIN_SECRET en tu entorno." },
+      { error: "Define PORTFOLIO_ADMIN_SECRET in your environment." },
       { status: 500 }
     );
   }
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const normalizedSecret = secret?.trim();
 
   if (!normalizedSecret || !verifyAdminSecret(normalizedSecret)) {
-    return NextResponse.json({ error: "Clave inválida." }, { status: 401 });
+    return NextResponse.json({ error: "Invalid key." }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });

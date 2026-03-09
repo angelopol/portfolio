@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --color-background: #09090f;
-  --color-surface: #111322;
-  --color-card: #171a2b;
+  --color-background: #06131f;
+  --color-surface: #0a2130;
+  --color-card: #0f2b3d;
   --color-text: #f8fafc;
-  --color-muted: #94a3b8;
-  --color-accent: #8b5cf6;
-  --color-accent-soft: #c4b5fd;
-  --color-ring: #8b5cf6;
+  --color-muted: #92abc0;
+  --color-accent: #0ea5a4;
+  --color-accent-soft: #7dd3fc;
+  --color-ring: #22c55e;
 }
 
 html {
@@ -20,11 +20,32 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(139, 92, 246, 0.18), transparent 24%),
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 22%),
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(14, 165, 164, 0.18), transparent 22%),
+    radial-gradient(circle at center, rgba(59, 130, 246, 0.1), transparent 30%),
     var(--color-background);
   color: var(--color-text);
   font-family: var(--font-sans), sans-serif;
+}
+
+@keyframes sparkle-rise {
+  0% {
+    transform: translate3d(0, 18px, 0) scale(0.8);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.55;
+  }
+
+  70% {
+    opacity: 0.35;
+  }
+
+  100% {
+    transform: translate3d(0, -120vh, 0) scale(1.15);
+    opacity: 0;
+  }
 }
 
 .react-pdf__Page {
@@ -47,8 +68,27 @@ body {
 }
 
 @layer components {
+  .sparkle-field {
+    @apply pointer-events-none fixed inset-0 overflow-hidden;
+    z-index: 0;
+  }
+
+  .sparkle {
+    position: absolute;
+    bottom: -10vh;
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
+    animation-name: sparkle-rise;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    opacity: 0;
+  }
+
   .section-shell {
-    @apply mx-auto w-full max-w-7xl px-6 lg:px-8;
+    @apply relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-8;
   }
 
   .section-label {

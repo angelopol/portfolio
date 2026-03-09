@@ -13,7 +13,7 @@ function ensureAdmin() {
 
 export async function GET() {
   if (!ensureAdmin()) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
   const content = await getSiteContent();
@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   if (!ensureAdmin()) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
   const nextContent = (await request.json()) as SiteContent;

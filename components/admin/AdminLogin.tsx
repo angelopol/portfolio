@@ -26,14 +26,14 @@ export function AdminLogin({ configured }: { configured: boolean }) {
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
-        setError(data.error ?? "No fue posible iniciar sesión.");
+        setError(data.error ?? "Could not sign in.");
         return;
       }
 
       setSecret("");
       router.refresh();
     } catch {
-      setError("No fue posible conectar con el servidor.");
+      setError("Could not connect to the server.");
     } finally {
       setSubmitting(false);
     }
@@ -49,24 +49,24 @@ export function AdminLogin({ configured }: { configured: boolean }) {
 
           <p className="section-label">Control Room</p>
           <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
-            Panel privado para editar tu portafolio
+            Private panel to edit your portfolio
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            Desde aquí puedes actualizar el contenido del home, about, proyectos y la
-            paleta visual del sitio sin tocar componentes.
+            Update the home, about, projects, and visual theme of the site from here
+            without touching components.
           </p>
 
           {!configured && (
             <div className="mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
-              Primero define <strong>PORTFOLIO_ADMIN_SECRET</strong> en tu archivo
-              .env.local usando el ejemplo disponible en .env.example.
+              First define <strong>PORTFOLIO_ADMIN_SECRET</strong> in your
+              .env.local file using the example from .env.example.
             </div>
           )}
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-200" htmlFor="secret">
-                Clave secreta
+                Secret key
               </label>
               <input
                 id="secret"
@@ -74,7 +74,7 @@ export function AdminLogin({ configured }: { configured: boolean }) {
                 autoComplete="current-password"
                 value={secret}
                 onChange={(event) => setSecret(event.target.value)}
-                placeholder="Ingresa la clave del panel"
+                placeholder="Enter the panel key"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none ring-0 transition placeholder:text-slate-500 focus:border-[var(--color-accent)]"
                 disabled={!configured || submitting}
               />
@@ -92,7 +92,7 @@ export function AdminLogin({ configured }: { configured: boolean }) {
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FiLogIn />
-              {submitting ? "Validando acceso..." : "Entrar al panel"}
+              {submitting ? "Validating access..." : "Enter panel"}
             </button>
           </form>
         </div>

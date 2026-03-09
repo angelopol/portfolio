@@ -7,56 +7,56 @@
     "location": "Valencia, Venezuela"
   },
   "theme": {
-    "accent": "#8b5cf6",
-    "accentSoft": "#c4b5fd",
-    "background": "#09090f",
-    "surface": "#111322",
-    "card": "#171a2b",
+    "accent": "#0ea5a4",
+    "accentSoft": "#7dd3fc",
+    "background": "#06131f",
+    "surface": "#0a2130",
+    "card": "#0f2b3d",
     "text": "#f8fafc",
-    "muted": "#94a3b8",
-    "ring": "#8b5cf6"
+    "muted": "#92abc0",
+    "ring": "#22c55e"
   },
   "home": {
-    "eyebrow": "Portafolio dinámico · Next.js + TypeScript",
-    "title": "Desarrollo productos web sólidos, escalables y listos para negocio.",
-    "subtitle": "Backend first, con visión de producto y foco en performance.",
-    "description": "Soy Angelo Polgrossi, estudiante avanzado de ingeniería en computación y desarrollador enfocado en backend, arquitectura web y soluciones integradas. Trabajo con productos que necesitan velocidad, estabilidad y una experiencia moderna para el usuario final.",
-    "availability": "Disponible para nuevos proyectos y colaboraciones remotas.",
+    "eyebrow": "Dynamic portfolio · Next.js + TypeScript",
+    "title": "I build solid, scalable web products that are ready for real business needs.",
+    "subtitle": "Backend-first engineering with product vision and performance in mind.",
+    "description": "I am Angelo Polgrossi, an advanced computer engineering student and developer focused on backend architecture, web platforms, and integrated solutions. I work on products that need speed, reliability, and a modern experience for the end user.",
+    "availability": "Available for new projects and remote collaborations.",
     "location": "Valencia, Venezuela · UTC-4",
     "primaryCta": {
-      "label": "Ver proyectos",
+      "label": "View projects",
       "href": "#projects"
     },
     "secondaryCta": {
-      "label": "Descargar CV",
+      "label": "Download resume",
       "href": "/assets/CV - Angelo Polgrossi - English.pdf"
     },
     "metrics": [
       {
-        "label": "Stack principal",
+        "label": "Core stack",
         "value": "Laravel · React · Next.js"
       },
       {
-        "label": "Enfoque",
-        "value": "Backend, APIs y plataformas cloud"
+        "label": "Focus",
+        "value": "Backend, APIs, and cloud platforms"
       },
       {
-        "label": "Experiencia",
-        "value": "Web apps, microcontroladores y sistemas internos"
+        "label": "Experience",
+        "value": "Web apps, microcontrollers, and internal systems"
       }
     ],
     "highlights": [
-      "Arquitectura backend y APIs escalables",
-      "Integración entre frontend, backend y servicios cloud",
-      "Automatización, bases de datos y software especializado"
+      "Scalable backend architecture and API design",
+      "Integration across frontend, backend, and cloud services",
+      "Automation, databases, and specialized internal software"
     ]
   },
   "about": {
-    "headline": "Combino backend, producto y ejecución para convertir ideas en software útil.",
+    "headline": "I combine backend, product thinking, and execution to turn ideas into useful software.",
     "summary": [
-      "He desarrollado plataformas web, sistemas administrativos, soluciones para microcomputadoras y herramientas internas para operaciones reales de negocio.",
-      "Me siento especialmente cómodo diseñando bases de datos, APIs, flujos de autenticación, paneles administrativos y procesos donde la confiabilidad es clave.",
-      "Aunque mi fortaleza principal está en backend, también puedo integrarme con frontend moderno para entregar productos completos de punta a punta."
+      "I have built web platforms, administrative systems, microcomputer solutions, and internal tools for real business operations.",
+      "I am especially comfortable designing databases, APIs, authentication flows, admin panels, and processes where reliability is critical.",
+      "Although backend is my strongest area, I can also work with modern frontend stacks to deliver complete end-to-end products."
     ],
     "skillset": [
       "Next.js",
@@ -85,10 +85,10 @@
       "Jupyter"
     ],
     "focusAreas": [
-      "Diseño de APIs y lógica de negocio",
-      "Dashboards y paneles administrativos",
-      "Integraciones con servicios externos",
-      "Sistemas híbridos online/offline"
+      "API design and business logic",
+      "Dashboards and admin panels",
+      "External service integrations",
+      "Hybrid online/offline systems"
     ],
     "profileImage": "/assets/profile.jpeg"
   },
@@ -96,7 +96,7 @@
     {
       "id": "ezpass",
       "title": "EZPASS",
-      "description": "Plataforma web y red de microcomputadoras para contabilidad y control de acceso. Integración con Laravel, Python, OpenCV, MySQL y AWS, incluyendo sincronización offline.",
+      "description": "Web platform and microcomputer network for accounting and access control. Built with Laravel, Python, OpenCV, MySQL, and AWS, including offline synchronization.",
       "stack": ["Laravel", "Python", "OpenCV", "MySQL", "AWS"],
       "image": "/assets/Projects/EZPASSALL.png",
       "demoUrl": "https://ezpass.cloud/",
@@ -105,7 +105,7 @@
     {
       "id": "coleabg",
       "title": "Colegio de Abogados del Estado Carabobo",
-      "description": "Sitio web para consultas de facturación de agremiados con PHP y SQL Server, orientado a procesos administrativos reales.",
+      "description": "Website for member billing lookups built with PHP and SQL Server, focused on real administrative workflows.",
       "stack": ["PHP", "Bootstrap", "SQL Server"],
       "image": "/assets/Projects/COLEABGALL.png",
       "demoUrl": "https://coleabg.com/",
@@ -114,7 +114,7 @@
     {
       "id": "soulbeat",
       "title": "SOULBEAT",
-      "description": "Participación como backend developer. Diseño de base de datos, modelos, migraciones y mensajería en tiempo real con Pusher dentro de un flujo colaborativo XP.",
+      "description": "Worked as a backend developer on database design, models, migrations, and real-time messaging with Pusher inside an XP-style collaborative workflow.",
       "stack": ["Laravel", "MySQL", "Pusher", "Sockets"],
       "image": "/assets/Projects/SOULBEATALL.png",
       "demoUrl": "https://soulbeat-main-aycgth.laravel.cloud/login",
@@ -123,7 +123,7 @@
     {
       "id": "financy",
       "title": "FINANCY",
-      "description": "Aplicación web de finanzas personales adaptada al mercado venezolano, construida con Laravel, React, Inertia y Tailwind CSS.",
+      "description": "Personal finance web app tailored to the Venezuelan market, built with Laravel, React, Inertia, and Tailwind CSS.",
       "stack": ["Laravel", "React", "Inertia", "Tailwind"],
       "image": "/assets/Projects/FINANCYALL.png",
       "demoUrl": "https://financy-main-sprvyq.laravel.cloud",
@@ -133,7 +133,7 @@
     {
       "id": "bistrot",
       "title": "Bistrot Chef Remy",
-      "description": "Backend en Node.js y Express con autenticación, estructura administrativa y coordinación backend/frontend bajo Scrum.",
+      "description": "Node.js and Express backend with authentication, administrative structure, and backend/frontend coordination under Scrum.",
       "stack": ["Node.js", "Express", "Authentication"],
       "image": "/assets/Projects/BISTROTALL.png",
       "githubUrl": "https://github.com/angelopol/bistrot"
@@ -141,7 +141,7 @@
     {
       "id": "carnetapp",
       "title": "Carnet App",
-      "description": "Generación de carnets para miembros del colegio usando Python, OpenCV, Tkinter y MySQL.",
+      "description": "ID card generation app for association members using Python, OpenCV, Tkinter, and MySQL.",
       "stack": ["Python", "OpenCV", "Tkinter", "MySQL"],
       "image": "/assets/Projects/CARNETAPPALL.png",
       "githubUrl": "https://github.com/angelopol/ColeabgCarnetApp"
@@ -149,7 +149,7 @@
     {
       "id": "inventory",
       "title": "Inventory",
-      "description": "Aplicación de inventario ligera desarrollada con Python, Flet y SQLite.",
+      "description": "Lightweight inventory app built with Python, Flet, and SQLite.",
       "stack": ["Python", "Flet", "SQLite"],
       "image": "/assets/Projects/INVENTORYALL.png",
       "githubUrl": "https://github.com/angelopol/inventory"
@@ -166,12 +166,12 @@
     }
   ],
   "resume": {
-    "title": "CV y perfil profesional",
-    "description": "Mantén siempre disponible una versión descargable del CV mientras el portafolio comunica experiencia, stack y proyectos destacados.",
-    "previewTitle": "Vista de CV para desktop",
-    "previewText": "En escritorio se muestra una vista embebida. En móvil, algunos navegadores descargan el PDF automáticamente, por eso la experiencia se optimiza con acciones directas.",
+    "title": "Resume and professional profile",
+    "description": "Keep a downloadable resume always available while the portfolio highlights experience, stack, and featured projects.",
+    "previewTitle": "Desktop resume preview",
+    "previewText": "On desktop, the resume is displayed in an embedded preview. On mobile, some browsers may download the PDF automatically, so the experience is supported with direct actions.",
     "downloadUrl": "/assets/CV - Angelo Polgrossi - English.pdf",
-    "openLabel": "Abrir CV",
-    "downloadLabel": "Descargar CV"
+    "openLabel": "Open resume",
+    "downloadLabel": "Download resume"
   }
 }

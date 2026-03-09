@@ -91,7 +91,7 @@ function ProjectCard({ project, priority }: { project: Project; priority?: boole
               className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
             >
               <FiGithub />
-              Código
+              Code
             </a>
           )}
         </div>
@@ -116,6 +116,22 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
   return (
     <div style={themeStyle} className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
+      <div aria-hidden="true" className="sparkle-field">
+        {Array.from({ length: 18 }).map((_, index) => (
+          <span
+            key={index}
+            className="sparkle"
+            style={
+              {
+                left: `${(index * 7 + 9) % 100}%`,
+                animationDelay: `${(index % 6) * 1.2}s`,
+                animationDuration: `${10 + (index % 5)}s`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
+
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(9,9,15,0.72)] backdrop-blur-xl">
         <div className="section-shell flex h-20 items-center justify-between gap-6">
           <Link href="/" className="font-display text-lg font-semibold tracking-[0.32em] text-white">
@@ -259,7 +275,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="space-y-8">
               <div className="glass-panel border border-white/10 p-8">
-                <h3 className="font-display text-xl font-semibold text-white">Áreas de enfoque</h3>
+                <h3 className="font-display text-xl font-semibold text-white">Focus areas</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.focusAreas.map((item) => (
                     <span
@@ -287,7 +303,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div className="glass-panel border border-white/10 p-8">
-                <h3 className="font-display text-xl font-semibold text-white">Herramientas</h3>
+                <h3 className="font-display text-xl font-semibold text-white">Tools</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.toolset.map((item) => (
                     <span
@@ -307,12 +323,8 @@ export function SiteShell({ content }: { content: SiteContent }) {
           <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <span className="section-label">Projects</span>
-              <h2 className="section-title">Casos reales, productos útiles y ejecución end-to-end.</h2>
+              <h2 className="section-title">Real products, useful systems, and end-to-end execution.</h2>
             </div>
-            <p className="max-w-2xl text-sm leading-7 text-slate-400">
-              Esta grilla se alimenta desde el panel privado. Puedes reordenar, editar o
-              agregar proyectos modificando el JSON del sitio.
-            </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
