@@ -1359,7 +1359,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </div>
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
                       {draft.home.metrics.map((metric, index) => (
-                        <div key={`${metric.label}-${index}`} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <div key={`home-metric-preview-${index}`} className="rounded-2xl border border-white/10 bg-white/5 p-3">
                           <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{metric.label}</p>
                           <p className="mt-2 text-sm font-semibold text-white">{metric.value}</p>
                         </div>
@@ -1487,7 +1487,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
                       <div className="space-y-3">
                         {draft.home.metrics.map((metric, index) => (
-                          <div key={`${metric.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                          <div key={`home-metric-editor-${index}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
                             <input
                               type="text"
                               value={metric.label}
@@ -1533,7 +1533,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       <div className="space-y-3">
                         {draft.home.highlights.map((highlight, index) => (
                           <div
-                            key={`${highlight}-${index}`}
+                            key={`home-highlight-${index}`}
                             onDragOver={(event) => {
                               event.preventDefault();
                               setDragOverListItem({ listKey: "home.highlights", index });
@@ -1715,75 +1715,15 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-white">Skillset</p>
-                            <p className="text-xs text-slate-400">Arrastra para reordenar.</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => addReorderableItem("about.skillset", "Nueva skill")}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                          >
-                            <FiPlus />
-                            Añadir
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {draft.about.skillset.map((skill, index) => (
-                            <div
-                              key={`${skill}-${index}`}
-                              onDragOver={(event) => {
-                                event.preventDefault();
-                                setDragOverListItem({ listKey: "about.skillset", index });
-                              }}
-                              onDrop={() => {
-                                if (draggedListItem?.listKey === "about.skillset") {
-                                  reorderListItems("about.skillset", draggedListItem.index, index);
-                                }
-                                setDraggedListItem(null);
-                                setDragOverListItem(null);
-                              }}
-                              className={`rounded-2xl border p-3 ${
-                                dragOverListItem?.listKey === "about.skillset" && dragOverListItem.index === index
-                                  ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
-                                  : "border-white/10 bg-slate-950/40"
-                              }`}
-                            >
-                              <div
-                                draggable
-                                onDragStart={() => setDraggedListItem({ listKey: "about.skillset", index })}
-                                onDragEnd={() => {
-                                  setDraggedListItem(null);
-                                  setDragOverListItem(null);
-                                }}
-                                className="grid cursor-grab gap-3 md:grid-cols-[auto_1fr_auto]"
-                              >
-                                <div className="flex items-center rounded-xl border border-dashed border-white/10 px-3 text-xs uppercase tracking-[0.2em] text-slate-500">
-                                  drag
-                                </div>
-                                <input
-                                  type="text"
-                                  value={skill}
-                                  onChange={(event) =>
-                                    updateReorderableItem("about.skillset", index, event.target.value)
-                                  }
-                                  className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeReorderableItem("about.skillset", index)}
-                                  className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
-                                >
-                                  <FiTrash2 />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <span className="mb-2 block text-sm font-semibold text-white">Skillset</span>
+                        <span className="mb-3 block text-xs text-slate-400">Una skill por línea.</span>
+                        <textarea
+                          value={draft.about.skillset.join("\n")}
+                          onChange={(event) => updateAboutField("skillset", updateMultilineList(event.target.value))}
+                          className="min-h-[180px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                        />
+                      </label>
 
                       <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
                         <span className="mb-2 block text-sm font-semibold text-white">Toolset</span>
@@ -1815,7 +1755,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       <div className="space-y-3">
                         {draft.about.focusAreas.map((focusArea, index) => (
                           <div
-                            key={`${focusArea}-${index}`}
+                            key={`about-focus-${index}`}
                             onDragOver={(event) => {
                               event.preventDefault();
                               setDragOverListItem({ listKey: "about.focusAreas", index });
