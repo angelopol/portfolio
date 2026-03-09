@@ -1,7 +1,12 @@
 import { promises as fs } from "fs";
 import path from "path";
 
-import { getSupabaseAdminClient, getSupabaseContentRowId, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseAdminClient,
+  getSupabaseContentRowId,
+  isMissingSupabaseTableError,
+  isSupabaseConfigured,
+} from "@/lib/supabase";
 import type { SiteContent } from "@/types/site";
 
 const contentFilePath = path.join(process.cwd(), "content", "site-content.json");
@@ -25,6 +30,10 @@ export async function getSiteContent(): Promise<SiteContent> {
     .maybeSingle();
 
   if (error) {
+    if (isMissingSupabaseTableError(error.message)) {
+      return getLocalSiteContent();
+    }
+
     throw new Error(`No se pudo cargar el contenido desde Supabase: ${error.message}`);
   }
 
@@ -56,6 +65,12 @@ export async function saveSiteContent(content: SiteContent): Promise<void> {
   );
 
   if (error) {
+    if (isMissingSupabaseTableError(error.message)) {
+      const nextContent = `${JSON.stringify(content, null, 2)}\n`;
+      await fs.writeFile(contentFilePath, nextContent, "utf8");
+      return;
+    }
+
     throw new Error(`No se pudo guardar el contenido en Supabase: ${error.message}`);
   }
 }

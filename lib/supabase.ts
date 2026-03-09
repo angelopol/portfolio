@@ -29,3 +29,15 @@ export function getSupabaseAdminClient(): SupabaseClient {
 export function getSupabaseContentRowId(): string {
   return process.env.SUPABASE_CONTENT_ROW_ID?.trim() || "primary";
 }
+
+export function isMissingSupabaseTableError(message?: string): boolean {
+  if (!message) {
+    return false;
+  }
+
+  return (
+    message.includes("Could not find the table") ||
+    message.includes("relation") ||
+    message.includes("schema cache")
+  );
+}

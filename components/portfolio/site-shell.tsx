@@ -1,4 +1,5 @@
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { IconType } from "react-icons";
@@ -13,8 +14,19 @@ import {
 } from "react-icons/fi";
 
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
-import { ResumePdfPreview } from "@/components/portfolio/resume-pdf-preview";
 import type { SiteContent } from "@/types/site";
+
+const ResumePdfPreview = dynamic(
+  () => import("@/components/portfolio/resume-pdf-preview").then((module) => module.ResumePdfPreview),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-8 text-sm text-slate-400">
+        Loading resume preview...
+      </div>
+    ),
+  }
+);
 
 const sectionLinks = [
   { href: "#home", label: "Home" },
@@ -96,7 +108,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
       </header>
 
       <main>
-        <section id="home" className="section-shell grid gap-10 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28">
+        <section id="home" className="section-shell grid gap-10 py-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-16">
           <div>
             <span className="section-label">{content.home.eyebrow}</span>
             <h1 className="font-display max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-7xl">
