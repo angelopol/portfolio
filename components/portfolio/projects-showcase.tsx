@@ -27,6 +27,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
   const searchParams = useSearchParams();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   const projectParam = searchParams.get("project");
 
@@ -96,6 +97,16 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
     };
   }, [selectedProject, slides.length]);
 
+  useEffect(() => {
+    if (!shareFeedback) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setShareFeedback(null), 2200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [shareFeedback]);
+
   function openProject(projectId: string) {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("project", projectId);
@@ -116,12 +127,29 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
   }
 
   async function shareProject(projectId: string) {
+    const project = projects.find((item) => item.id === projectId);
     const url = `${window.location.origin}${pathname}?project=${encodeURIComponent(projectId)}`;
 
     try {
+      if (navigator.share) {
+        await navigator.share({
+          title: project?.title ?? "Project",
+          text: project?.description ?? "Check this project",
+          url,
+        });
+        setShareFeedback("Share dialog opened.");
+        return;
+      }
+
       await navigator.clipboard.writeText(url);
+      setShareFeedback("Project link copied.");
     } catch {
-      window.prompt("Copy this project link", url);
+      try {
+        window.prompt("Copy this project link", url);
+        setShareFeedback("Copy the project link from the dialog.");
+      } catch {
+        setShareFeedback("Could not share this project.");
+      }
     }
   }
 
@@ -147,6 +175,12 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
 
   return (
     <>
+      {shareFeedback && (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-[90] -translate-x-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] shadow-glow">
+          {shareFeedback}
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, index) => (
           <article
