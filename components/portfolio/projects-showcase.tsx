@@ -299,7 +299,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 aria-modal="true"
                 aria-labelledby={`project-modal-title-${selectedProject.id}`}
                 aria-describedby={`project-modal-description-${selectedProject.id}`}
-                className="relative grid h-full w-full max-w-[1700px] overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl lg:grid-cols-[360px_minmax(0,1fr)]"
+                className="relative grid h-full max-h-[calc(100vh-1rem)] w-full max-w-[1700px] overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl lg:grid-cols-[360px_minmax(0,1fr)]"
                 onClick={(event) => event.stopPropagation()}
               >
               <button
@@ -313,7 +313,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   <span className="hidden text-sm font-semibold sm:inline">Close</span>
               </button>
 
-                <aside className="order-2 flex h-full flex-col border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
+                <aside className="order-2 flex h-full min-h-0 flex-col overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
                 <div className="flex items-start gap-4">
                   <div className="min-w-0 flex-1">
                   <p className="section-label">Project details</p>
@@ -392,8 +392,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </div>
               </aside>
 
-              <section className="order-1 flex min-h-[52vh] flex-col bg-[var(--color-background)] lg:order-2">
-                <div className="relative flex-1 overflow-hidden bg-[var(--color-background)]">
+              <section className="order-1 flex min-h-[52vh] min-h-0 flex-col bg-[var(--color-background)] lg:order-2">
+                <div className="relative min-h-0 flex-1 overflow-hidden bg-[var(--color-background)]">
                   <Image
                     src={slides[activeSlideIndex]}
                     alt={`${selectedProject.title} preview ${activeSlideIndex + 1}`}
@@ -425,7 +425,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   )}
                 </div>
 
-                <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+                <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
                       {slides.length > 1
@@ -433,13 +433,13 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                         : "Project preview"}
                     </p>
                     {slides.length > 1 && (
-                      <div className="flex flex-wrap justify-end gap-2">
+                      <div className="flex max-w-full flex-wrap justify-end gap-2">
                         {slides.map((image, index) => (
                           <button
                             key={`${selectedProject.id}-thumb-${index}`}
                             type="button"
                             onClick={() => setActiveSlideIndex(index)}
-                            className={`relative h-14 w-20 overflow-hidden rounded-2xl border transition ${
+                            className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-2xl border transition ${
                               index === activeSlideIndex
                                 ? "border-[var(--color-accent)]"
                                 : "border-[var(--color-border)] opacity-70 hover:border-[var(--color-border-strong)] hover:opacity-100"
