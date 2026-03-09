@@ -83,7 +83,6 @@ export async function uploadPublicFileToS3(options: {
       Key: storageKey,
       Body: options.buffer,
       ContentType: options.mimeType,
-      ACL: "public-read",
       CacheControl: options.kind === "image" ? "public, max-age=31536000, immutable" : "public, max-age=3600",
       ContentDisposition: options.kind === "document" ? "inline" : undefined,
     })

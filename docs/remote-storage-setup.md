@@ -25,9 +25,9 @@ Optional values:
 
 ### Public visibility
 
-This app uploads files to S3 with `ACL: public-read` and returns the public URL.
+This app uploads files to S3 without object ACLs and returns the public URL.
 
-Your bucket must allow public objects for this to work correctly. If your AWS account enforces Bucket owner enforced object ownership, use a public bucket policy or a public CDN/domain in `AWS_S3_PUBLIC_BASE_URL`.
+Your bucket must allow public reads through a bucket policy, CloudFront, or a custom public domain for this to work correctly. This is compatible with Bucket owner enforced object ownership, where ACLs are disabled.
 
 Notes:
 - If `AWS_S3_PUBLIC_BASE_URL` is omitted, the app builds the URL automatically from bucket + region.

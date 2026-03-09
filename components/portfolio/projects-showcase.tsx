@@ -169,7 +169,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               <div className="flex flex-1 flex-col gap-5 p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-2xl font-semibold text-white">{project.title}</h3>
+                    <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
                     {project.featured && (
                       <span className="mt-3 inline-flex rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">
                         Featured
@@ -178,13 +178,13 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   </div>
                 </div>
 
-                <p className="text-sm leading-7 text-slate-300">{project.description}</p>
+                <p className="text-sm leading-7 text-[var(--color-muted)]">{project.description}</p>
 
                 <div className="flex flex-wrap gap-2">
                   {project.stack.map((item) => (
                     <span
                       key={`${project.id}-${item}`}
-                      className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300"
+                      className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -198,7 +198,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       event.stopPropagation();
                       void shareProject(project.id);
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
                   >
                     <FiShare2 />
                     Share
@@ -217,7 +217,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               <button
                 type="button"
                 onClick={closeProject}
-                className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-slate-950/70 text-white transition hover:bg-white/10"
+                className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-slate-950/70 text-[var(--color-text)] transition hover:bg-white/10"
                 aria-label="Close project"
               >
                 <FiX />
@@ -226,7 +226,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               <aside className="order-2 flex h-full flex-col border-t border-white/10 bg-[var(--color-card)]/60 p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
                 <div>
                   <p className="section-label">Project details</p>
-                  <h3 className="font-display text-3xl font-semibold text-white">
+                  <h3 className="font-display text-3xl font-semibold text-[var(--color-text)]">
                     {selectedProject.title}
                   </h3>
                   {selectedProject.featured && (
@@ -236,7 +236,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   )}
                 </div>
 
-                <p className="mt-6 text-sm leading-8 text-slate-300">
+                <p className="mt-6 text-sm leading-8 text-[var(--color-muted)]">
                   {selectedProject.description}
                 </p>
 
@@ -248,7 +248,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     {selectedProject.stack.map((item) => (
                       <span
                         key={`${selectedProject.id}-modal-${item}`}
-                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200"
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
                       >
                         {item}
                       </span>
@@ -260,7 +260,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   <button
                     type="button"
                     onClick={() => void shareProject(selectedProject.id)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
                   >
                     <FiShare2 />
                     Share project
@@ -281,7 +281,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       href={selectedProject.githubUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
                     >
                       <FiGithub />
                       Source code

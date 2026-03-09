@@ -21,7 +21,7 @@ const ResumePdfPreview = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-8 text-sm text-slate-400">
+      <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-8 text-sm text-[var(--color-muted)]">
         Loading resume preview...
       </div>
     ),
@@ -76,11 +76,11 @@ export function SiteShell({ content }: { content: SiteContent }) {
         <section id="home" className="section-shell grid gap-10 pt-28 pb-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-32 lg:pb-16">
           <div>
             <span className="section-label">{content.home.eyebrow}</span>
-            <h1 className="font-display max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-7xl">
+            <h1 className="font-display max-w-4xl text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl lg:text-7xl">
               {content.home.title}
             </h1>
             <p className="mt-6 max-w-3xl text-xl text-[var(--color-accent-soft)]">{content.home.subtitle}</p>
-            <p className="mt-6 max-w-3xl text-base leading-8 text-slate-300">{content.home.description}</p>
+            <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--color-muted)]">{content.home.description}</p>
 
             <div className="mt-8 flex flex-wrap gap-4">
               <a
@@ -104,8 +104,8 @@ export function SiteShell({ content }: { content: SiteContent }) {
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {content.home.metrics.map((item) => (
                 <div key={item.label} className="glass-panel border border-white/10 p-4">
-                  <p className="text-sm text-slate-400">{item.label}</p>
-                  <p className="mt-2 text-base font-semibold text-white">{item.value}</p>
+                  <p className="text-sm text-[var(--color-muted)]">{item.label}</p>
+                  <p className="mt-2 text-base font-semibold text-[var(--color-text)]">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -128,10 +128,10 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 <p className="text-sm uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
                   {content.site.role}
                 </p>
-                <h2 className="mt-2 font-display text-3xl font-semibold text-white">
+                <h2 className="mt-2 font-display text-3xl font-semibold text-[var(--color-text)]">
                   {content.site.name}
                 </h2>
-                <div className="mt-4 space-y-2 text-sm text-slate-300">
+                <div className="mt-4 space-y-2 text-sm text-[var(--color-muted)]">
                   <p className="inline-flex items-center gap-2">
                     <FiMapPin />
                     {content.home.location}
@@ -143,7 +143,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="mt-8 space-y-3">
               {content.home.highlights.map((item) => (
-                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--color-text)]">
                   {item}
                 </div>
               ))}
@@ -159,7 +159,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
                     href={social.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
                   >
                     <Icon />
                     {social.label}
@@ -176,7 +176,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               <span className="section-label">About</span>
               <h2 className="section-title max-w-3xl">{content.about.headline}</h2>
 
-              <div className="mt-6 space-y-5 text-base leading-8 text-slate-300">
+              <div className="mt-6 space-y-5 text-base leading-8 text-[var(--color-muted)]">
                 {content.about.summary.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
@@ -185,12 +185,12 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="space-y-8">
               <div className="glass-panel border border-white/10 p-8">
-                <h3 className="font-display text-xl font-semibold text-white">Focus areas</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Focus areas</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.focusAreas.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200"
+                      className="rounded-full border border-white/10 px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -199,12 +199,12 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div className="glass-panel border border-white/10 p-8">
-                <h3 className="font-display text-xl font-semibold text-white">Tech stack</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tech stack</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.skillset.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-slate-200"
+                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -213,12 +213,12 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div className="glass-panel border border-white/10 p-8">
-                <h3 className="font-display text-xl font-semibold text-white">Tools</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tools</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.toolset.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-slate-200"
+                      className="rounded-full bg-white/5 px-4 py-2 text-sm text-[var(--color-text)]"
                     >
                       {item}
                     </span>
@@ -245,7 +245,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
             <div className="glass-panel border border-white/10 p-8 shadow-glow">
               <span className="section-label">Resume</span>
               <h2 className="section-title">{content.resume.title}</h2>
-              <p className="mt-6 text-base leading-8 text-slate-300">{content.resume.description}</p>
+              <p className="mt-6 text-base leading-8 text-[var(--color-muted)]">{content.resume.description}</p>
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <a
@@ -260,15 +260,15 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 <a
                   href={content.resume.downloadUrl}
                   download
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/30 hover:bg-white/5"
                 >
                   <FiDownload />
                   {content.resume.downloadLabel}
                 </a>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-7 text-slate-300">
-                <p className="font-semibold text-white">{content.resume.previewTitle}</p>
+              <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-7 text-[var(--color-muted)]">
+                <p className="font-semibold text-[var(--color-text)]">{content.resume.previewTitle}</p>
                 <p className="mt-2">{content.resume.previewText}</p>
               </div>
             </div>
@@ -286,7 +286,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
       <footer className="section-shell py-12">
         <div className="glass-panel flex flex-col gap-4 border border-white/10 px-6 py-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="font-semibold text-white">{content.site.name}</p>
+            <p className="font-semibold text-[var(--color-text)]">{content.site.name}</p>
             <p className="mt-1">{content.site.role}</p>
           </div>
 
