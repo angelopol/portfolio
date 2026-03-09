@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  FiChevronDown,
+  FiChevronUp,
   FiCopy,
   FiClock,
   FiEye,
@@ -120,6 +122,11 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     useState<DraggedProjectGalleryItem>(null);
   const [dragOverProjectGalleryItem, setDragOverProjectGalleryItem] =
     useState<DraggedProjectGalleryItem>(null);
+  const [homeEditorCollapsed, setHomeEditorCollapsed] = useState(true);
+  const [aboutEditorCollapsed, setAboutEditorCollapsed] = useState(true);
+  const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(initialContent.projects.map((project) => [project.id, true]))
+  );
   const [projectGallerySelections, setProjectGallerySelections] = useState<Record<string, string>>(
     {}
   );
@@ -212,6 +219,25 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   useEffect(() => {
     globalThis.localStorage.setItem("portfolio-autosave-interval", String(autoSaveIntervalMs));
   }, [autoSaveIntervalMs]);
+
+  useEffect(() => {
+    setCollapsedProjects((currentState) => {
+      const nextState = Object.fromEntries(
+        draft.projects.map((project) => [project.id, currentState[project.id] ?? true])
+      );
+
+      const nextKeys = Object.keys(nextState);
+      const currentKeys = Object.keys(currentState);
+      const hasDifferentSize = nextKeys.length !== currentKeys.length;
+      const hasDifferentValue = nextKeys.some((key) => nextState[key] !== currentState[key]);
+
+      if (!hasDifferentSize && !hasDifferentValue) {
+        return currentState;
+      }
+
+      return nextState;
+    });
+  }, [draft.projects]);
 
   useEffect(() => {
     async function loadMediaLibrary() {
@@ -593,6 +619,13 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     }));
   }
 
+  function toggleProjectAccordion(projectId: string) {
+    setCollapsedProjects((currentState) => ({
+      ...currentState,
+      [projectId]: !currentState[projectId],
+    }));
+  }
+
   function addProject() {
     const fallbackImage =
       imageLibrary[0]?.url || draft.projects[0]?.image || draft.about.profileImage;
@@ -620,6 +653,10 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     );
     setMediaStatus("Proyecto creado. Completa sus campos y luego guarda los cambios.");
     pushToast("Proyecto creado en el editor visual.", "success");
+    setCollapsedProjects((currentState) => ({
+      ...currentState,
+      [`project-${timestamp}`]: false,
+    }));
   }
 
   function removeProject(projectId: string) {
@@ -1255,13 +1292,26 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
           <div className="glass-panel border border-white/10 p-6">
             <section className="space-y-5">
-                  <div>
-                    <h2 className="font-display text-xl font-semibold text-white">Editor visual de home</h2>
-                    <p className="mt-2 text-sm text-slate-400">
-                      Ajusta el hero principal, CTAs, highlights y métricas sin editar JSON.
-                    </p>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="font-display text-xl font-semibold text-white">Editor visual de home</h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Ajusta el hero principal, CTAs, highlights y métricas sin editar JSON.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setHomeEditorCollapsed((current) => !current)}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                    >
+                      {homeEditorCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                      {homeEditorCollapsed ? "Expandir" : "Contraer"}
+                    </button>
                   </div>
 
+                  {!homeEditorCollapsed && (
+                    <>
                   <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
                     <div className="flex items-center justify-between gap-3">
                       <p className="section-label">Preview en vivo</p>
@@ -1512,18 +1562,33 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       </div>
                     </div>
                   </div>
+                    </>
+                  )}
                 </section>
           </div>
 
           <div className="glass-panel border border-white/10 p-6">
             <section className="space-y-5">
-                  <div>
-                    <h2 className="font-display text-xl font-semibold text-white">Editor visual de about</h2>
-                    <p className="mt-2 text-sm text-slate-400">
-                      Controla el perfil, resumen, stack y áreas de enfoque desde el panel.
-                    </p>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="font-display text-xl font-semibold text-white">Editor visual de about</h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Controla el perfil, resumen, stack y áreas de enfoque desde el panel.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setAboutEditorCollapsed((current) => !current)}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                    >
+                      {aboutEditorCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                      {aboutEditorCollapsed ? "Expandir" : "Contraer"}
+                    </button>
                   </div>
 
+                  {!aboutEditorCollapsed && (
+                    <>
                   <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
                     <div className="flex items-center justify-between gap-3">
                       <p className="section-label">Preview en vivo</p>
@@ -1779,6 +1844,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                       </div>
                     </div>
                   </div>
+                    </>
+                  )}
                 </section>
           </div>
 
@@ -1856,6 +1923,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                   const availableGalleryImages = imageLibrary.filter(
                     (item) => item.url !== project.image && !galleryImages.includes(item.url)
                   );
+                  const isProjectCollapsed = collapsedProjects[project.id] ?? true;
 
                   return (
                     <div
@@ -1889,14 +1957,33 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                         }}
                         className="mb-5 flex cursor-grab items-center justify-between rounded-2xl border border-dashed border-white/15 bg-slate-950/40 px-4 py-3 active:cursor-grabbing"
                       >
-                        <div>
-                          <p className="text-sm font-semibold text-white">Arrastra para reordenar</p>
-                          <p className="text-xs text-slate-400">La nueva posición quedará lista para guardar.</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white">{project.title}</p>
+                          <p className="text-xs text-slate-400">
+                            {isProjectCollapsed
+                              ? "Panel retraído. Expándelo para editar el contenido."
+                              : "La nueva posición quedará lista para guardar."}
+                          </p>
                         </div>
-                        <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Drag & Drop</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Drag & Drop</span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              toggleProjectAccordion(project.id);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                          >
+                            {isProjectCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                            {isProjectCollapsed ? "Expandir" : "Contraer"}
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+                      {!isProjectCollapsed && (
+                        <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
                         <div className="space-y-4">
                           <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
                             <img
@@ -2205,6 +2292,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
                   );
                 })}

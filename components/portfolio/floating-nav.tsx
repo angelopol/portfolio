@@ -49,10 +49,13 @@ export function FloatingNav({
           isVisible && !hidden ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0 pointer-events-none"
         }`}
       >
-        <div className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-white/10 bg-[rgba(6,19,31,0.82)] px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8">
+        <div
+          className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-white/10 px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-surface) 86%, transparent)" }}
+        >
           <Link
             href="/"
-            className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-display text-base font-semibold tracking-[0.32em] text-white transition hover:bg-white/10"
+            className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-display text-base font-semibold tracking-[0.32em] text-[var(--color-text)] transition hover:bg-white/10"
           >
             {initials}
           </Link>
@@ -62,7 +65,7 @@ export function FloatingNav({
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                className="rounded-full px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:bg-white/5 hover:text-[var(--color-text)]"
               >
                 {link.label}
               </a>
@@ -73,7 +76,7 @@ export function FloatingNav({
             href={resumeUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-white/25 hover:bg-white/10"
           >
             <FiDownload />
             CV
