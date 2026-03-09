@@ -163,7 +163,18 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                 />
 
-                <div className="absolute inset-0 flex items-start justify-end bg-gradient-to-t from-[var(--color-background)]/80 via-[var(--color-background)]/20 to-transparent p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)]/80 via-[var(--color-background)]/20 to-transparent p-4">
+                  {project.featured && (
+                    <span
+                      className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
+                      aria-label="Featured project"
+                      title="Featured project"
+                    >
+                      <FiStar className="h-4 w-4 fill-current" />
+                    </span>
+                  )}
+
+                  <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={() => openProject(project.id)}
@@ -173,12 +184,13 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   >
                     <FiExternalLink />
                   </button>
+                  </div>
                 </div>
               </div>
 
               <div className="flex flex-1 flex-col gap-5 p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
+                  <div>
                     <button
                       type="button"
                       onClick={() => openProject(project.id)}
@@ -187,15 +199,6 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     >
                       <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
                     </button>
-                    {project.featured && (
-                      <span
-                        className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
-                        aria-label="Featured project"
-                        title="Featured project"
-                      >
-                        <FiStar className="h-4 w-4 fill-current" />
-                      </span>
-                    )}
                   </div>
                 </div>
 

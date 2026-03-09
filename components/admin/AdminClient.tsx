@@ -100,8 +100,9 @@ type ConfirmDialog =
 
 export function AdminClient({ initialContent }: { initialContent: SiteContent }) {
   const router = useRouter();
+  const initialSerializedContent = JSON.stringify(initialContent, null, 2);
   const [draft, setDraft] = useState<SiteContent>(initialContent);
-  const [rawJson, setRawJson] = useState(JSON.stringify(initialContent, null, 2));
+  const [rawJson, setRawJson] = useState(initialSerializedContent);
   const [mediaLibrary, setMediaLibrary] = useState<MediaItem[]>([]);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -123,13 +124,17 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     useState<DraggedProjectGalleryItem>(null);
   const [homeEditorCollapsed, setHomeEditorCollapsed] = useState(true);
   const [aboutEditorCollapsed, setAboutEditorCollapsed] = useState(true);
+  const [projectsEditorCollapsed, setProjectsEditorCollapsed] = useState(true);
+  const [jsonEditorCollapsed, setJsonEditorCollapsed] = useState(true);
+  const [rawJsonDirty, setRawJsonDirty] = useState(false);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(initialContent.projects.map((project) => [project.id, true]))
   );
   const [projectGallerySelections, setProjectGallerySelections] = useState<Record<string, string>>(
     {}
   );
-  const [lastSavedJson, setLastSavedJson] = useState(JSON.stringify(initialContent, null, 2));
+  const [lastSavedJson, setLastSavedJson] = useState(initialSerializedContent);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [autoSaveIntervalMs, setAutoSaveIntervalMs] = useState(1800);
   const [changeHistory, setChangeHistory] = useState<ChangeHistoryEntry[]>([]);
@@ -149,8 +154,6 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     [draft]
   );
 
-  const hasPendingChanges = rawJson !== lastSavedJson;
-
   const historyPreview = useMemo(() => changeHistory.slice(-5).reverse(), [changeHistory]);
 
   function formatTimeStamp() {
@@ -161,17 +164,26 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     });
   }
 
+  function serializeContent(value: SiteContent) {
+    return JSON.stringify(value, null, 2);
+  }
+
+  function getWorkingJsonSnapshot() {
+    return rawJsonDirty ? rawJson : serializeContent(draft);
+  }
+
   function syncDraft(
     nextValue: SiteContent,
     options?: { recordHistory?: boolean; historyLabel?: string; clearRedo?: boolean }
   ) {
-    const nextRawJson = JSON.stringify(nextValue, null, 2);
+    const nextRawJson = serializeContent(nextValue);
+    const currentJson = getWorkingJsonSnapshot();
 
-    if (options?.recordHistory && nextRawJson !== rawJson) {
+    if (options?.recordHistory && nextRawJson !== currentJson) {
       setChangeHistory((currentHistory) => [
         ...currentHistory.slice(-19),
         {
-          json: rawJson,
+          json: currentJson,
           label: options.historyLabel ?? "Cambio visual",
           timestamp: formatTimeStamp(),
         },
@@ -183,7 +195,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     }
 
     setDraft(nextValue);
-    setRawJson(nextRawJson);
+    setRawJsonDirty(false);
+    setHasPendingChanges(nextRawJson !== lastSavedJson);
     setJsonError(null);
     setStatus(null);
   }
@@ -218,6 +231,14 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   useEffect(() => {
     globalThis.localStorage.setItem("portfolio-autosave-interval", String(autoSaveIntervalMs));
   }, [autoSaveIntervalMs]);
+
+  useEffect(() => {
+    if (rawJsonDirty || jsonEditorCollapsed) {
+      return;
+    }
+
+    setRawJson(serializeContent(draft));
+  }, [draft, jsonEditorCollapsed, rawJsonDirty]);
 
   useEffect(() => {
     setCollapsedProjects((currentState) => {
@@ -273,6 +294,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
   function handleJsonChange(value: string) {
     setRawJson(value);
+    setRawJsonDirty(true);
+    setHasPendingChanges(value !== lastSavedJson);
     setStatus(null);
 
     try {
@@ -684,7 +707,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       setRedoHistory((currentRedo) => [
         ...currentRedo.slice(-19),
         {
-          json: rawJson,
+          json: getWorkingJsonSnapshot(),
           label: previousEntry.label,
           timestamp: formatTimeStamp(),
         },
@@ -901,8 +924,10 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       }
 
       setDraft(parsed);
-      const nextJson = JSON.stringify(parsed, null, 2);
+      const nextJson = serializeContent(parsed);
       setRawJson(nextJson);
+      setRawJsonDirty(false);
+      setHasPendingChanges(false);
       setLastSavedJson(nextJson);
       setLastSavedAt(new Date().toLocaleTimeString("es-ES", {
         hour: "2-digit",
@@ -938,7 +963,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
   async function handleSave() {
     try {
-      const parsed = JSON.parse(rawJson) as SiteContent;
+      const parsed = rawJsonDirty ? (JSON.parse(rawJson) as SiteContent) : draft;
       await saveContent(parsed, "manual");
     } catch {
       setStatus("No fue posible guardar. Revisa el JSON y vuelve a intentar.");
@@ -964,7 +989,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
     const timeoutId = globalThis.setTimeout(() => {
       try {
-        const parsed = JSON.parse(rawJson) as SiteContent;
+        const parsed = rawJsonDirty ? (JSON.parse(rawJson) as SiteContent) : draft;
         void saveContent(parsed, "auto");
       } catch {
         setStatus("El guardado automático se pausó hasta que el JSON vuelva a ser válido.");
@@ -974,7 +999,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     return () => {
       globalThis.clearTimeout(timeoutId);
     };
-  }, [autoSaveIntervalMs, autoSaving, hasPendingChanges, jsonError, rawJson, saving]);
+  }, [autoSaveIntervalMs, autoSaving, draft, hasPendingChanges, jsonError, rawJson, rawJsonDirty, saving]);
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] px-6 py-8 text-white">
@@ -1858,16 +1883,31 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={addProject}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  <FiPlus />
-                  Nuevo proyecto
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setProjectsEditorCollapsed((current) => !current)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                  >
+                    {projectsEditorCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                    {projectsEditorCollapsed ? "Expandir" : "Contraer"}
+                  </button>
+
+                  {!projectsEditorCollapsed && (
+                    <button
+                      type="button"
+                      onClick={addProject}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                    >
+                      <FiPlus />
+                      Nuevo proyecto
+                    </button>
+                  )}
+                </div>
               </div>
 
+              {!projectsEditorCollapsed && (
+                <>
               <div className="mt-6 rounded-[28px] border border-white/10 bg-gradient-to-br from-[var(--color-surface)] to-slate-950/80 p-5 shadow-glow">
                 <div className="flex items-center justify-between gap-3">
                   <p className="section-label">Preview en vivo</p>
@@ -2296,6 +2336,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                   );
                 })}
               </div>
+                </>
+              )}
             </div>
 
             <div className="glass-panel border border-white/10 p-6">
@@ -2307,17 +2349,29 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     ajustar todo manualmente aquí.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || autoSaving || Boolean(jsonError)}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <FiSave />
-                  {saving ? "Guardando..." : autoSaving ? "Autosaving..." : "Guardar cambios"}
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setJsonEditorCollapsed((current) => !current)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                  >
+                    {jsonEditorCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+                    {jsonEditorCollapsed ? "Expandir" : "Contraer"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || autoSaving || Boolean(jsonError)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FiSave />
+                    {saving ? "Guardando..." : autoSaving ? "Autosaving..." : "Guardar cambios"}
+                  </button>
+                </div>
               </div>
 
+              {!jsonEditorCollapsed && (
+                <>
               <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/70 p-2">
                 <textarea
                   value={rawJson}
@@ -2333,6 +2387,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                 >
                   {jsonError}
                 </div>
+              )}
+                </>
               )}
             </div>
         </section>
