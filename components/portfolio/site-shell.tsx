@@ -241,7 +241,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
         </section>
 
         <section id="resume" className="section-shell py-8 lg:py-16">
-          <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className="grid items-start gap-8 xl:grid-cols-[0.8fr_1.2fr]">
             <div className="glass-panel border border-white/10 p-8 shadow-glow">
               <span className="section-label">Resume</span>
               <h2 className="section-title">{content.resume.title}</h2>

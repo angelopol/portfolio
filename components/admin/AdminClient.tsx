@@ -1850,136 +1850,80 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
               </div>
 
               <div className="mt-6 space-y-6">
-                {draft.projects.map((project) => (
-                  <div
-                    key={project.id}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setDragOverProjectId(project.id);
-                    }}
-                    onDrop={() => {
-                      if (draggedProjectId) {
-                        reorderProjects(draggedProjectId, project.id);
-                      }
-                      setDraggedProjectId(null);
-                      setDragOverProjectId(null);
-                    }}
-                    onDragEnd={() => {
-                      setDraggedProjectId(null);
-                      setDragOverProjectId(null);
-                    }}
-                    className={`rounded-[28px] border bg-white/5 p-5 transition ${
-                      dragOverProjectId === project.id
-                        ? "border-[var(--color-accent)] shadow-glow"
-                        : "border-white/10"
-                    } ${draggedProjectId === project.id ? "opacity-70" : "opacity-100"}`}
-                  >
+                {draft.projects.map((project) => {
+                  const galleryImages = project.gallery ?? [];
+                  const gallerySelection = projectGallerySelections[project.id] ?? "";
+                  const availableGalleryImages = imageLibrary.filter(
+                    (item) => item.url !== project.image && !galleryImages.includes(item.url)
+                  );
+
+                  return (
                     <div
-                      draggable
-                      onDragStart={() => {
-                        setDraggedProjectId(project.id);
+                      key={project.id}
+                      onDragOver={(event) => {
+                        event.preventDefault();
                         setDragOverProjectId(project.id);
                       }}
-                      className="mb-5 flex cursor-grab items-center justify-between rounded-2xl border border-dashed border-white/15 bg-slate-950/40 px-4 py-3 active:cursor-grabbing"
+                      onDrop={() => {
+                        if (draggedProjectId) {
+                          reorderProjects(draggedProjectId, project.id);
+                        }
+                        setDraggedProjectId(null);
+                        setDragOverProjectId(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedProjectId(null);
+                        setDragOverProjectId(null);
+                      }}
+                      className={`rounded-[28px] border bg-white/5 p-5 transition ${
+                        dragOverProjectId === project.id
+                          ? "border-[var(--color-accent)] shadow-glow"
+                          : "border-white/10"
+                      } ${draggedProjectId === project.id ? "opacity-70" : "opacity-100"}`}
                     >
-                      <div>
-                        <p className="text-sm font-semibold text-white">Arrastra para reordenar</p>
-                        <p className="text-xs text-slate-400">La nueva posición quedará lista para guardar.</p>
+                      <div
+                        draggable
+                        onDragStart={() => {
+                          setDraggedProjectId(project.id);
+                          setDragOverProjectId(project.id);
+                        }}
+                        className="mb-5 flex cursor-grab items-center justify-between rounded-2xl border border-dashed border-white/15 bg-slate-950/40 px-4 py-3 active:cursor-grabbing"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-white">Arrastra para reordenar</p>
+                          <p className="text-xs text-slate-400">La nueva posición quedará lista para guardar.</p>
+                        </div>
+                        <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Drag & Drop</span>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Drag & Drop</span>
-                    </div>
 
-                    <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
-                      <div className="space-y-4">
-                        {(() => {
-                          const galleryImages = project.gallery ?? [];
-                          const gallerySelection = projectGallerySelections[project.id] ?? "";
-                          const availableGalleryImages = imageLibrary.filter(
-                            (item) => item.url !== project.image && !galleryImages.includes(item.url)
-                          );
-
-                          return (
-                            <>
-                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
-                          <img
-                            src={project.image}
-                            alt={project.title}
-                            className="aspect-[16/10] h-auto w-full object-cover"
-                          />
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3 text-xs text-slate-400">
-                          Ruta actual: <span className="text-slate-200">{project.image}</span>
-                        </div>
-
-                        <label className="block rounded-2xl border border-white/10 bg-white/5 p-3">
-                          <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-                            <FiUploadCloud />
-                            Reemplazar imagen
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            disabled={uploadingKind !== null}
-                            onChange={(event) => {
-                              const nextFile = event.target.files?.[0];
-
-                              if (nextFile) {
-                                void uploadProjectImage(project.id, nextFile);
-                                event.target.value = "";
-                              }
-                            }}
-                            className="block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-[var(--color-accent)] file:px-4 file:py-2 file:font-semibold file:text-white hover:file:opacity-90"
-                          />
-                        </label>
-
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-                            Usar imagen existente
-                          </label>
-                          <select
-                            value={project.image}
-                            onChange={(event) => applyProjectImage(project.id, event.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none"
-                          >
-                            {imageLibrary.map((item) => (
-                              <option key={item.id} value={item.url}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-                                Galería del modal
-                              </p>
-                              <p className="mt-2 text-xs leading-6 text-slate-400">
-                                Añade varias imágenes extra para el slider. La portada actual se mantiene como primera imagen.
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                              {galleryImages.length} extra
-                            </span>
+                      <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+                        <div className="space-y-4">
+                          <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
+                            <img
+                              src={project.image}
+                              alt={project.title}
+                              className="aspect-[16/10] h-auto w-full object-cover"
+                            />
                           </div>
 
-                          <label className="mt-4 block rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                          <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3 text-xs text-slate-400">
+                            Ruta actual: <span className="text-slate-200">{project.image}</span>
+                          </div>
+
+                          <label className="block rounded-2xl border border-white/10 bg-white/5 p-3">
                             <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
                               <FiUploadCloud />
-                              Subir varias imágenes
+                              Reemplazar imagen
                             </span>
                             <input
                               type="file"
                               accept="image/*"
-                              multiple
                               disabled={uploadingKind !== null}
                               onChange={(event) => {
-                                const nextFiles = event.target.files;
+                                const nextFile = event.target.files?.[0];
 
-                                if (nextFiles && nextFiles.length > 0) {
-                                  void uploadProjectGalleryImages(project.id, nextFiles);
+                                if (nextFile) {
+                                  void uploadProjectImage(project.id, nextFile);
                                   event.target.value = "";
                                 }
                               }}
@@ -1987,214 +1931,283 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                             />
                           </label>
 
-                          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                             <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-                              Añadir imagen existente
+                              Usar imagen existente
                             </label>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                              <select
-                                value={gallerySelection}
+                            <select
+                              value={project.image}
+                              onChange={(event) => applyProjectImage(project.id, event.target.value)}
+                              className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none"
+                            >
+                              {imageLibrary.map((item) => (
+                                <option key={item.id} value={item.url}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-medium text-slate-200">Título</span>
+                              <input
+                                type="text"
+                                value={project.title}
+                                onChange={(event) => updateProjectField(project.id, "title", event.target.value)}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                              />
+                            </label>
+
+                            <label className="flex items-end gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(project.featured)}
                                 onChange={(event) =>
-                                  setProjectGallerySelection(project.id, event.target.value)
+                                  updateProjectField(project.id, "featured", event.target.checked)
                                 }
-                                className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none"
-                              >
-                                <option value="">Selecciona una imagen</option>
-                                {availableGalleryImages.map((item) => (
-                                  <option key={item.id} value={item.url}>
-                                    {item.name}
-                                  </option>
-                                ))}
-                              </select>
+                                className="h-4 w-4 rounded border-white/20 bg-transparent"
+                              />
+                              <span className="text-sm font-medium text-slate-200">Marcar como destacado</span>
+                            </label>
+                          </div>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!gallerySelection) {
-                                    return;
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-slate-200">Descripción</span>
+                            <textarea
+                              value={project.description}
+                              onChange={(event) =>
+                                updateProjectField(project.id, "description", event.target.value)
+                              }
+                              className="min-h-[120px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-slate-200">Stack</span>
+                            <input
+                              type="text"
+                              value={project.stack.join(", ")}
+                              onChange={(event) => updateProjectStack(project.id, event.target.value)}
+                              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                            />
+                            <span className="mt-2 block text-xs text-slate-500">
+                              Separa cada tecnología con coma.
+                            </span>
+                          </label>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-medium text-slate-200">Demo URL</span>
+                              <input
+                                type="text"
+                                value={project.demoUrl ?? ""}
+                                onChange={(event) =>
+                                  updateProjectField(project.id, "demoUrl", event.target.value)
+                                }
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                              />
+                            </label>
+
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-medium text-slate-200">GitHub URL</span>
+                              <input
+                                type="text"
+                                value={project.githubUrl ?? ""}
+                                onChange={(event) =>
+                                  updateProjectField(project.id, "githubUrl", event.target.value)
+                                }
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => requestRemoveProject(project)}
+                              className="inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                            >
+                              <FiTrash2 />
+                              Eliminar proyecto
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="xl:col-span-2 rounded-[28px] border border-white/10 bg-slate-950/35 p-5">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                Galería del modal
+                              </p>
+                              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                                Añade imágenes extra para el slider. La portada actual se mantiene como la primera imagen y puedes reordenar el resto visualmente.
+                              </p>
+                            </div>
+                            <span className="inline-flex w-fit rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                              {galleryImages.length} extra
+                            </span>
+                          </div>
+
+                          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                            <label className="block rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                <FiUploadCloud />
+                                Subir varias imágenes
+                              </span>
+                              <p className="mb-4 text-xs leading-6 text-slate-400">
+                                Puedes subir varias capturas al mismo tiempo para este proyecto.
+                              </p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                disabled={uploadingKind !== null}
+                                onChange={(event) => {
+                                  const nextFiles = event.target.files;
+
+                                  if (nextFiles && nextFiles.length > 0) {
+                                    void uploadProjectGalleryImages(project.id, nextFiles);
+                                    event.target.value = "";
                                   }
-
-                                  appendProjectGalleryImages(project.id, [gallerySelection]);
-                                  setProjectGallerySelection(project.id, "");
                                 }}
-                                disabled={!gallerySelection}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <FiPlus />
-                                Añadir
-                              </button>
+                                className="block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-[var(--color-accent)] file:px-4 file:py-2 file:font-semibold file:text-white hover:file:opacity-90"
+                              />
+                            </label>
+
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                Añadir imagen existente
+                              </label>
+                              <p className="mb-4 text-xs leading-6 text-slate-400">
+                                Reutiliza imágenes de la librería local sin volver a subirlas.
+                              </p>
+                              <div className="flex flex-col gap-3 sm:flex-row">
+                                <select
+                                  value={gallerySelection}
+                                  onChange={(event) =>
+                                    setProjectGallerySelection(project.id, event.target.value)
+                                  }
+                                  className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none"
+                                >
+                                  <option value="">Selecciona una imagen</option>
+                                  {availableGalleryImages.map((item) => (
+                                    <option key={item.id} value={item.url}>
+                                      {item.name}
+                                    </option>
+                                  ))}
+                                </select>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!gallerySelection) {
+                                      return;
+                                    }
+
+                                    appendProjectGalleryImages(project.id, [gallerySelection]);
+                                    setProjectGallerySelection(project.id, "");
+                                  }}
+                                  disabled={!gallerySelection}
+                                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <FiPlus />
+                                  Añadir
+                                </button>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="mt-4 space-y-3">
+                          <div className="mt-5 space-y-3">
                             {galleryImages.length === 0 ? (
-                              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-4 text-xs leading-6 text-slate-400">
+                              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-5 text-sm leading-7 text-slate-400">
                                 Este proyecto aún no tiene imágenes adicionales para el modal.
                               </div>
                             ) : (
-                              galleryImages.map((imageUrl, index) => (
-                                <div
-                                  key={`${project.id}-gallery-${imageUrl}-${index}`}
-                                  onDragOver={(event) => {
-                                    event.preventDefault();
-                                    setDragOverProjectGalleryItem({ projectId: project.id, index });
-                                  }}
-                                  onDrop={() => {
-                                    if (draggedProjectGalleryItem?.projectId === project.id) {
-                                      reorderProjectGalleryImages(
-                                        project.id,
-                                        draggedProjectGalleryItem.index,
-                                        index
-                                      );
-                                    }
-                                    setDraggedProjectGalleryItem(null);
-                                    setDragOverProjectGalleryItem(null);
-                                  }}
-                                  className={`flex items-center gap-3 rounded-2xl border p-3 transition ${
-                                    dragOverProjectGalleryItem?.projectId === project.id &&
-                                    dragOverProjectGalleryItem.index === index
-                                      ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
-                                      : "border-white/10 bg-slate-950/30"
-                                  }`}
-                                >
+                              <div className="grid gap-3 xl:grid-cols-2">
+                                {galleryImages.map((imageUrl, index) => (
                                   <div
-                                    draggable
-                                    onDragStart={() =>
-                                      setDraggedProjectGalleryItem({ projectId: project.id, index })
-                                    }
-                                    onDragEnd={() => {
+                                    key={`${project.id}-gallery-${imageUrl}-${index}`}
+                                    onDragOver={(event) => {
+                                      event.preventDefault();
+                                      setDragOverProjectGalleryItem({ projectId: project.id, index });
+                                    }}
+                                    onDrop={() => {
+                                      if (draggedProjectGalleryItem?.projectId === project.id) {
+                                        reorderProjectGalleryImages(
+                                          project.id,
+                                          draggedProjectGalleryItem.index,
+                                          index
+                                        );
+                                      }
                                       setDraggedProjectGalleryItem(null);
                                       setDragOverProjectGalleryItem(null);
                                     }}
-                                    className="flex cursor-grab items-center rounded-xl border border-dashed border-white/10 px-3 py-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 active:cursor-grabbing"
+                                    className={`rounded-2xl border p-3 transition ${
+                                      dragOverProjectGalleryItem?.projectId === project.id &&
+                                      dragOverProjectGalleryItem.index === index
+                                        ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                                        : "border-white/10 bg-slate-950/30"
+                                    }`}
                                   >
-                                    drag
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                      <div
+                                        draggable
+                                        onDragStart={() =>
+                                          setDraggedProjectGalleryItem({ projectId: project.id, index })
+                                        }
+                                        onDragEnd={() => {
+                                          setDraggedProjectGalleryItem(null);
+                                          setDragOverProjectGalleryItem(null);
+                                        }}
+                                        className="flex cursor-grab items-center justify-center rounded-xl border border-dashed border-white/10 px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 active:cursor-grabbing sm:min-w-[64px]"
+                                      >
+                                        drag
+                                      </div>
+
+                                      <img
+                                        src={imageUrl}
+                                        alt={`${project.title} gallery ${index + 1}`}
+                                        className="h-20 w-full rounded-xl border border-white/10 object-cover sm:w-28"
+                                      />
+
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                                          Imagen {index + 2} del modal
+                                        </p>
+                                        <p className="mt-1 truncate text-sm text-slate-200">{imageUrl}</p>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => promoteProjectGalleryImage(project.id, imageUrl)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                                      >
+                                        Usar portada
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeProjectGalleryImage(project.id, imageUrl)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                                      >
+                                        <FiTrash2 />
+                                        Quitar
+                                      </button>
+                                    </div>
                                   </div>
-                                  <img
-                                    src={imageUrl}
-                                    alt={`${project.title} gallery ${index + 1}`}
-                                    className="h-14 w-20 rounded-xl border border-white/10 object-cover"
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                                      Imagen {index + 2} del modal
-                                    </p>
-                                    <p className="truncate text-sm text-slate-200">{imageUrl}</p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => promoteProjectGalleryImage(project.id, imageUrl)}
-                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                                  >
-                                    Usar portada
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeProjectGalleryImage(project.id, imageUrl)}
-                                    className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/10"
-                                  >
-                                    <FiTrash2 />
-                                    Quitar
-                                  </button>
-                                </div>
-                              ))
+                                ))}
+                              </div>
                             )}
                           </div>
                         </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-200">Título</span>
-                            <input
-                              type="text"
-                              value={project.title}
-                              onChange={(event) => updateProjectField(project.id, "title", event.target.value)}
-                              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                            />
-                          </label>
-
-                          <label className="flex items-end gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(project.featured)}
-                              onChange={(event) =>
-                                updateProjectField(project.id, "featured", event.target.checked)
-                              }
-                              className="h-4 w-4 rounded border-white/20 bg-transparent"
-                            />
-                            <span className="text-sm font-medium text-slate-200">Marcar como destacado</span>
-                          </label>
-                        </div>
-
-                        <label className="block">
-                          <span className="mb-2 block text-sm font-medium text-slate-200">Descripción</span>
-                          <textarea
-                            value={project.description}
-                            onChange={(event) =>
-                              updateProjectField(project.id, "description", event.target.value)
-                            }
-                            className="min-h-[120px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                          />
-                        </label>
-
-                        <label className="block">
-                          <span className="mb-2 block text-sm font-medium text-slate-200">Stack</span>
-                          <input
-                            type="text"
-                            value={project.stack.join(", ")}
-                            onChange={(event) => updateProjectStack(project.id, event.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                          />
-                          <span className="mt-2 block text-xs text-slate-500">
-                            Separa cada tecnología con coma.
-                          </span>
-                        </label>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-200">Demo URL</span>
-                            <input
-                              type="text"
-                              value={project.demoUrl ?? ""}
-                              onChange={(event) =>
-                                updateProjectField(project.id, "demoUrl", event.target.value)
-                              }
-                              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-200">GitHub URL</span>
-                            <input
-                              type="text"
-                              value={project.githubUrl ?? ""}
-                              onChange={(event) =>
-                                updateProjectField(project.id, "githubUrl", event.target.value)
-                              }
-                              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-                            />
-                          </label>
-                        </div>
-
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => requestRemoveProject(project)}
-                            className="inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10"
-                          >
-                            <FiTrash2 />
-                            Eliminar proyecto
-                          </button>
-                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
