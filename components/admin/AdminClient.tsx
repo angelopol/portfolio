@@ -122,6 +122,9 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     useState<DraggedProjectGalleryItem>(null);
   const [dragOverProjectGalleryItem, setDragOverProjectGalleryItem] =
     useState<DraggedProjectGalleryItem>(null);
+  const [aboutSummaryInput, setAboutSummaryInput] = useState(initialContent.about.summary.join("\n"));
+  const [aboutSkillsetInput, setAboutSkillsetInput] = useState(initialContent.about.skillset.join("\n"));
+  const [aboutToolsetInput, setAboutToolsetInput] = useState(initialContent.about.toolset.join("\n"));
   const [homeEditorCollapsed, setHomeEditorCollapsed] = useState(true);
   const [aboutEditorCollapsed, setAboutEditorCollapsed] = useState(true);
   const [projectsEditorCollapsed, setProjectsEditorCollapsed] = useState(true);
@@ -239,6 +242,27 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
     setRawJson(serializeContent(draft));
   }, [draft, jsonEditorCollapsed, rawJsonDirty]);
+
+  useEffect(() => {
+    if (!areStringListsEqual(updateMultilineList(aboutSummaryInput), draft.about.summary)) {
+      setAboutSummaryInput(draft.about.summary.join("\n"));
+    }
+
+    if (!areStringListsEqual(updateMultilineList(aboutSkillsetInput), draft.about.skillset)) {
+      setAboutSkillsetInput(draft.about.skillset.join("\n"));
+    }
+
+    if (!areStringListsEqual(updateMultilineList(aboutToolsetInput), draft.about.toolset)) {
+      setAboutToolsetInput(draft.about.toolset.join("\n"));
+    }
+  }, [
+    aboutSkillsetInput,
+    aboutSummaryInput,
+    aboutToolsetInput,
+    draft.about.skillset,
+    draft.about.summary,
+    draft.about.toolset,
+  ]);
 
   useEffect(() => {
     setCollapsedProjects((currentState) => {
@@ -409,6 +433,10 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       .split("\n")
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  function areStringListsEqual(left: string[], right: string[]) {
+    return left.length === right.length && left.every((item, index) => item === right[index]);
   }
 
   function getReorderableList(listKey: ReorderableListKey) {
@@ -1706,8 +1734,12 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                           <span className="mb-2 block text-sm font-semibold text-white">Resumen</span>
                           <span className="mb-3 block text-xs text-slate-400">Un párrafo por línea.</span>
                           <textarea
-                            value={draft.about.summary.join("\n")}
-                            onChange={(event) => updateAboutField("summary", updateMultilineList(event.target.value))}
+                            value={aboutSummaryInput}
+                            onChange={(event) => {
+                              const { value } = event.target;
+                              setAboutSummaryInput(value);
+                              updateAboutField("summary", updateMultilineList(value));
+                            }}
                             className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
                           />
                         </label>
@@ -1719,8 +1751,12 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                         <span className="mb-2 block text-sm font-semibold text-white">Skillset</span>
                         <span className="mb-3 block text-xs text-slate-400">Una skill por línea.</span>
                         <textarea
-                          value={draft.about.skillset.join("\n")}
-                          onChange={(event) => updateAboutField("skillset", updateMultilineList(event.target.value))}
+                          value={aboutSkillsetInput}
+                          onChange={(event) => {
+                            const { value } = event.target;
+                            setAboutSkillsetInput(value);
+                            updateAboutField("skillset", updateMultilineList(value));
+                          }}
                           className="min-h-[180px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
                         />
                       </label>
@@ -1729,8 +1765,12 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                         <span className="mb-2 block text-sm font-semibold text-white">Toolset</span>
                         <span className="mb-3 block text-xs text-slate-400">Una herramienta por línea.</span>
                         <textarea
-                          value={draft.about.toolset.join("\n")}
-                          onChange={(event) => updateAboutField("toolset", updateMultilineList(event.target.value))}
+                          value={aboutToolsetInput}
+                          onChange={(event) => {
+                            const { value } = event.target;
+                            setAboutToolsetInput(value);
+                            updateAboutField("toolset", updateMultilineList(value));
+                          }}
                           className="min-h-[180px] w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
                         />
                       </label>
