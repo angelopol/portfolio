@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
   FiExternalLink,
   FiGithub,
+  FiShare2,
   FiX,
 } from "react-icons/fi";
 
@@ -19,8 +21,13 @@ function getProjectSlides(project: Project) {
 }
 
 export function ProjectsShowcase({ projects }: { projects: Project[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+  const projectParam = searchParams.get("project");
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -31,6 +38,23 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
     () => (selectedProject ? getProjectSlides(selectedProject) : []),
     [selectedProject]
   );
+
+  useEffect(() => {
+    if (!projectParam) {
+      setSelectedProjectId(null);
+      setActiveSlideIndex(0);
+      return;
+    }
+
+    const existingProject = projects.find((project) => project.id === projectParam);
+
+    if (!existingProject) {
+      return;
+    }
+
+    setSelectedProjectId(projectParam);
+    setActiveSlideIndex(0);
+  }, [projectParam, projects]);
 
   useEffect(() => {
     if (!selectedProject) {
@@ -72,13 +96,32 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
   }, [selectedProject, slides.length]);
 
   function openProject(projectId: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("project", projectId);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
     setSelectedProjectId(projectId);
     setActiveSlideIndex(0);
   }
 
   function closeProject() {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("project");
+    const nextUrl = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+
+    router.replace(nextUrl, { scroll: false });
     setSelectedProjectId(null);
     setActiveSlideIndex(0);
+  }
+
+  async function shareProject(projectId: string) {
+    const url = `${window.location.origin}${pathname}?project=${encodeURIComponent(projectId)}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this project link", url);
+    }
   }
 
   function showPreviousSlide() {
@@ -147,6 +190,20 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     </span>
                   ))}
                 </div>
+
+                <div className="mt-auto flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void shareProject(project.id);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                  >
+                    <FiShare2 />
+                    Share
+                  </button>
+                </div>
               </div>
             </article>
           </button>
@@ -200,6 +257,14 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </div>
 
                 <div className="mt-auto flex flex-wrap gap-3 pt-10">
+                  <button
+                    type="button"
+                    onClick={() => void shareProject(selectedProject.id)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+                  >
+                    <FiShare2 />
+                    Share project
+                  </button>
                   {selectedProject.demoUrl && (
                     <a
                       href={selectedProject.demoUrl}

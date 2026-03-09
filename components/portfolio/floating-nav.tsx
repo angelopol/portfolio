@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiDownload } from "react-icons/fi";
 
@@ -18,7 +19,9 @@ export function FloatingNav({
   initials: string;
   resumeUrl: string;
 }) {
+  const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
+  const hidden = Boolean(searchParams.get("project"));
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -43,7 +46,7 @@ export function FloatingNav({
     <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
       <div
         className={`pointer-events-auto w-full max-w-5xl transition duration-300 ${
-          isVisible ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0"
+          isVisible && !hidden ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0 pointer-events-none"
         }`}
       >
         <div className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-white/10 bg-[rgba(6,19,31,0.82)] px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8">

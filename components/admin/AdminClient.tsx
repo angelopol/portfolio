@@ -66,6 +66,11 @@ type DraggedListItem = {
   index: number;
 } | null;
 
+type DraggedProjectGalleryItem = {
+  projectId: string;
+  index: number;
+} | null;
+
 type ConfirmDialog =
   | {
       kind: "delete-media";
@@ -111,6 +116,13 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
   const [draggedListItem, setDraggedListItem] = useState<DraggedListItem>(null);
   const [dragOverListItem, setDragOverListItem] = useState<DraggedListItem>(null);
+  const [draggedProjectGalleryItem, setDraggedProjectGalleryItem] =
+    useState<DraggedProjectGalleryItem>(null);
+  const [dragOverProjectGalleryItem, setDragOverProjectGalleryItem] =
+    useState<DraggedProjectGalleryItem>(null);
+  const [projectGallerySelections, setProjectGallerySelections] = useState<Record<string, string>>(
+    {}
+  );
   const [lastSavedJson, setLastSavedJson] = useState(JSON.stringify(initialContent, null, 2));
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [autoSaveIntervalMs, setAutoSaveIntervalMs] = useState(1800);
@@ -252,7 +264,9 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
       draft.about.profileImage === url ||
       draft.resume.downloadUrl === url ||
       draft.home.secondaryCta.href === url ||
-      draft.projects.some((project) => project.image === url)
+      draft.projects.some(
+        (project) => project.image === url || Boolean(project.gallery?.includes(url))
+      )
     );
   }
 
@@ -491,6 +505,94 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     setMediaStatus("Imagen de proyecto actualizada. Solo falta guardar los cambios.");
   }
 
+  function appendProjectGalleryImages(projectId: string, urls: string[]) {
+    const nextUrls = urls.map((item) => item.trim()).filter(Boolean);
+
+    if (nextUrls.length === 0) {
+      return;
+    }
+
+    updateProject(projectId, (project) => ({
+      ...project,
+      gallery: Array.from(
+        new Set(
+          [...(project.gallery ?? []), ...nextUrls].filter((url) => url && url !== project.image)
+        )
+      ),
+    }));
+    setMediaStatus("Imágenes añadidas a la galería del modal. Solo falta guardar los cambios.");
+    pushToast("Imágenes añadidas a la galería del proyecto.", "success");
+  }
+
+  function removeProjectGalleryImage(projectId: string, imageUrl: string) {
+    updateProject(projectId, (project) => ({
+      ...project,
+      gallery: (project.gallery ?? []).filter((item) => item !== imageUrl),
+    }));
+    setMediaStatus("Imagen eliminada de la galería del modal.");
+    pushToast("Imagen eliminada de la galería del proyecto.", "info");
+  }
+
+  function promoteProjectGalleryImage(projectId: string, imageUrl: string) {
+    updateProject(projectId, (project) => {
+      const gallery = project.gallery ?? [];
+      const imageIndex = gallery.indexOf(imageUrl);
+
+      if (imageIndex === -1 || project.image === imageUrl) {
+        return project;
+      }
+
+      const nextGallery = [...gallery];
+      nextGallery.splice(imageIndex, 1, project.image);
+
+      return {
+        ...project,
+        image: imageUrl,
+        gallery: nextGallery,
+      };
+    });
+
+    setMediaStatus("La portada principal del proyecto fue actualizada.");
+    pushToast("La imagen seleccionada ahora es la portada del proyecto.", "success");
+  }
+
+  function reorderProjectGalleryImages(projectId: string, sourceIndex: number, targetIndex: number) {
+    if (sourceIndex === targetIndex) {
+      return;
+    }
+
+    updateProject(projectId, (project) => {
+      const nextGallery = [...(project.gallery ?? [])];
+
+      if (
+        sourceIndex < 0 ||
+        sourceIndex >= nextGallery.length ||
+        targetIndex < 0 ||
+        targetIndex >= nextGallery.length
+      ) {
+        return project;
+      }
+
+      const [movedImage] = nextGallery.splice(sourceIndex, 1);
+      nextGallery.splice(targetIndex, 0, movedImage);
+
+      return {
+        ...project,
+        gallery: nextGallery,
+      };
+    });
+
+    setMediaStatus("Orden de la galería actualizado en el borrador.");
+    pushToast("Orden de la galería actualizado.", "info");
+  }
+
+  function setProjectGallerySelection(projectId: string, value: string) {
+    setProjectGallerySelections((currentSelections) => ({
+      ...currentSelections,
+      [projectId]: value,
+    }));
+  }
+
   function addProject() {
     const fallbackImage =
       imageLibrary[0]?.url || draft.projects[0]?.image || draft.about.profileImage;
@@ -507,6 +609,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
             description: "Describe aquí el proyecto.",
             stack: ["Next.js"],
             image: fallbackImage,
+            gallery: [],
             demoUrl: "",
             githubUrl: "",
             featured: false,
@@ -624,6 +727,22 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
     if (item) {
       applyProjectImage(projectId, item.url);
+    }
+  }
+
+  async function uploadProjectGalleryImages(projectId: string, files: FileList | File[]) {
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const item = await uploadFile(file, "image");
+
+      if (item) {
+        uploadedUrls.push(item.url);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      appendProjectGalleryImages(projectId, uploadedUrls);
     }
   }
 
@@ -970,8 +1089,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
           </div>
         </section>
 
-        <section className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <div className="space-y-8">
+        <section className="space-y-8">
+          <div className="grid gap-8 xl:grid-cols-2">
             <div className="glass-panel border border-white/10 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -1134,10 +1253,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div className="glass-panel border border-white/10 p-6">
-              <div className="grid gap-8 xl:grid-cols-2">
-                <section className="space-y-5">
+          <div className="glass-panel border border-white/10 p-6">
+            <section className="space-y-5">
                   <div>
                     <h2 className="font-display text-xl font-semibold text-white">Editor visual de home</h2>
                     <p className="mt-2 text-sm text-slate-400">
@@ -1396,8 +1513,10 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </div>
                   </div>
                 </section>
+          </div>
 
-                <section className="space-y-5">
+          <div className="glass-panel border border-white/10 p-6">
+            <section className="space-y-5">
                   <div>
                     <h2 className="font-display text-xl font-semibold text-white">Editor visual de about</h2>
                     <p className="mt-2 text-sm text-slate-400">
@@ -1661,8 +1780,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                     </div>
                   </div>
                 </section>
-              </div>
-            </div>
+          </div>
 
             <div className="glass-panel border border-white/10 p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1773,6 +1891,15 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
 
                     <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
                       <div className="space-y-4">
+                        {(() => {
+                          const galleryImages = project.gallery ?? [];
+                          const gallerySelection = projectGallerySelections[project.id] ?? "";
+                          const availableGalleryImages = imageLibrary.filter(
+                            (item) => item.url !== project.image && !galleryImages.includes(item.url)
+                          );
+
+                          return (
+                            <>
                         <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
                           <img
                             src={project.image}
@@ -1822,6 +1949,161 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                             ))}
                           </select>
                         </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                Galería del modal
+                              </p>
+                              <p className="mt-2 text-xs leading-6 text-slate-400">
+                                Añade varias imágenes extra para el slider. La portada actual se mantiene como primera imagen.
+                              </p>
+                            </div>
+                            <span className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                              {galleryImages.length} extra
+                            </span>
+                          </div>
+
+                          <label className="mt-4 block rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                            <span className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                              <FiUploadCloud />
+                              Subir varias imágenes
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              disabled={uploadingKind !== null}
+                              onChange={(event) => {
+                                const nextFiles = event.target.files;
+
+                                if (nextFiles && nextFiles.length > 0) {
+                                  void uploadProjectGalleryImages(project.id, nextFiles);
+                                  event.target.value = "";
+                                }
+                              }}
+                              className="block w-full text-sm text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-[var(--color-accent)] file:px-4 file:py-2 file:font-semibold file:text-white hover:file:opacity-90"
+                            />
+                          </label>
+
+                          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                              Añadir imagen existente
+                            </label>
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                              <select
+                                value={gallerySelection}
+                                onChange={(event) =>
+                                  setProjectGallerySelection(project.id, event.target.value)
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none"
+                              >
+                                <option value="">Selecciona una imagen</option>
+                                {availableGalleryImages.map((item) => (
+                                  <option key={item.id} value={item.url}>
+                                    {item.name}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!gallerySelection) {
+                                    return;
+                                  }
+
+                                  appendProjectGalleryImages(project.id, [gallerySelection]);
+                                  setProjectGallerySelection(project.id, "");
+                                }}
+                                disabled={!gallerySelection}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <FiPlus />
+                                Añadir
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 space-y-3">
+                            {galleryImages.length === 0 ? (
+                              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-4 text-xs leading-6 text-slate-400">
+                                Este proyecto aún no tiene imágenes adicionales para el modal.
+                              </div>
+                            ) : (
+                              galleryImages.map((imageUrl, index) => (
+                                <div
+                                  key={`${project.id}-gallery-${imageUrl}-${index}`}
+                                  onDragOver={(event) => {
+                                    event.preventDefault();
+                                    setDragOverProjectGalleryItem({ projectId: project.id, index });
+                                  }}
+                                  onDrop={() => {
+                                    if (draggedProjectGalleryItem?.projectId === project.id) {
+                                      reorderProjectGalleryImages(
+                                        project.id,
+                                        draggedProjectGalleryItem.index,
+                                        index
+                                      );
+                                    }
+                                    setDraggedProjectGalleryItem(null);
+                                    setDragOverProjectGalleryItem(null);
+                                  }}
+                                  className={`flex items-center gap-3 rounded-2xl border p-3 transition ${
+                                    dragOverProjectGalleryItem?.projectId === project.id &&
+                                    dragOverProjectGalleryItem.index === index
+                                      ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                                      : "border-white/10 bg-slate-950/30"
+                                  }`}
+                                >
+                                  <div
+                                    draggable
+                                    onDragStart={() =>
+                                      setDraggedProjectGalleryItem({ projectId: project.id, index })
+                                    }
+                                    onDragEnd={() => {
+                                      setDraggedProjectGalleryItem(null);
+                                      setDragOverProjectGalleryItem(null);
+                                    }}
+                                    className="flex cursor-grab items-center rounded-xl border border-dashed border-white/10 px-3 py-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 active:cursor-grabbing"
+                                  >
+                                    drag
+                                  </div>
+                                  <img
+                                    src={imageUrl}
+                                    alt={`${project.title} gallery ${index + 1}`}
+                                    className="h-14 w-20 rounded-xl border border-white/10 object-cover"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                                      Imagen {index + 2} del modal
+                                    </p>
+                                    <p className="truncate text-sm text-slate-200">{imageUrl}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => promoteProjectGalleryImage(project.id, imageUrl)}
+                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                                  >
+                                    Usar portada
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeProjectGalleryImage(project.id, imageUrl)}
+                                    className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/10"
+                                  >
+                                    <FiTrash2 />
+                                    Quitar
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                            </>
+                          );
+                        })()}
                       </div>
 
                       <div className="space-y-4">
@@ -1953,7 +2235,6 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
                 </div>
               )}
             </div>
-          </div>
         </section>
 
         {confirmDialog && (
