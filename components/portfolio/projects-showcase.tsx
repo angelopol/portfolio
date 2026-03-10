@@ -294,7 +294,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               <button
                 type="button"
                 onClick={closeProject}
-                  className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] sm:right-4 sm:top-4 sm:h-auto sm:w-auto sm:min-h-11 sm:min-w-11 sm:gap-2 sm:px-4"
+                  className="absolute right-3 top-3 z-[95] pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] sm:right-4 sm:top-4 sm:h-auto sm:w-auto sm:min-h-11 sm:min-w-11 sm:gap-2 sm:px-4"
                   aria-label={`Close ${selectedProject.title} project dialog`}
                   title="Close project"
               >
@@ -302,7 +302,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   <span className="hidden text-sm font-semibold sm:inline">Close</span>
               </button>
 
-                <aside className="order-2 flex h-full min-h-0 flex-col overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
+                <aside className="relative z-0 order-2 flex h-full min-h-0 flex-col overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
                 <div className="flex items-start gap-4">
                   <div className="min-w-0 flex-1">
                   <p className="section-label">Project details</p>
@@ -381,7 +381,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 </div>
               </aside>
 
-              <section className="order-1 flex min-h-[52vh] min-h-0 flex-col bg-[var(--color-background)] lg:order-2">
+              <section className="relative z-0 order-1 flex min-h-[52vh] min-h-0 flex-col bg-[var(--color-background)] lg:order-2">
                 <div className="relative min-h-0 flex-1 overflow-hidden bg-[var(--color-background)]">
                   <Image
                     src={slides[activeSlideIndex]}
