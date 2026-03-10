@@ -294,11 +294,11 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
               <button
                 type="button"
                 onClick={closeProject}
-                  className="absolute right-4 top-4 z-20 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+                  className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] sm:right-4 sm:top-4 sm:h-auto sm:w-auto sm:min-h-11 sm:min-w-11 sm:gap-2 sm:px-4"
                   aria-label={`Close ${selectedProject.title} project dialog`}
                   title="Close project"
               >
-                <FiX />
+                <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="hidden text-sm font-semibold sm:inline">Close</span>
               </button>
 
@@ -397,30 +397,52 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       <button
                         type="button"
                         onClick={showPreviousSlide}
-                        className="absolute left-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
+                        className="absolute left-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)] sm:inline-flex"
                         aria-label="Previous image"
                       >
-                        <FiChevronLeft />
+                        <FiChevronLeft className="h-5 w-5" />
                       </button>
                       <button
                         type="button"
                         onClick={showNextSlide}
-                        className="absolute right-4 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
+                        className="absolute right-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)] sm:inline-flex"
                         aria-label="Next image"
                       >
-                        <FiChevronRight />
+                        <FiChevronRight className="h-5 w-5" />
                       </button>
                     </>
                   )}
                 </div>
 
                 <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                      {slides.length > 1
-                        ? `Image ${activeSlideIndex + 1} of ${slides.length}`
-                        : "Project preview"}
-                    </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <div className="flex items-center justify-between gap-3 sm:block">
+                      <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                        {slides.length > 1
+                          ? `Image ${activeSlideIndex + 1} of ${slides.length}`
+                          : "Project preview"}
+                      </p>
+                      {slides.length > 1 && (
+                        <div className="flex items-center gap-2 sm:hidden">
+                          <button
+                            type="button"
+                            onClick={showPreviousSlide}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-soft)]"
+                            aria-label="Previous image"
+                          >
+                            <FiChevronLeft className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={showNextSlide}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-soft)]"
+                            aria-label="Next image"
+                          >
+                            <FiChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {slides.length > 1 && (
                       <div className="flex max-w-full flex-wrap justify-end gap-2">
                         {slides.map((image, index) => (
