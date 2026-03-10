@@ -22,6 +22,7 @@ export function FloatingNav({
   const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
   const hidden = Boolean(searchParams.get("project"));
+  const navIsActive = isVisible && !hidden;
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -45,9 +46,11 @@ export function FloatingNav({
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
       <div
-        className={`pointer-events-auto w-full max-w-5xl transition duration-300 ${
-          isVisible && !hidden ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0 pointer-events-none"
+        aria-hidden={!navIsActive}
+        className={`w-full max-w-5xl transition duration-300 ${
+          navIsActive ? "translate-y-0 opacity-100" : "invisible -translate-y-8 opacity-0"
         }`}
+        style={{ pointerEvents: navIsActive ? "auto" : "none" }}
       >
         <div
           className="mx-auto flex min-h-[68px] items-center justify-between gap-3 rounded-full border border-[var(--color-border)] px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:px-6 lg:px-8"
