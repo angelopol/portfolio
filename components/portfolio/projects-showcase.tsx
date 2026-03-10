@@ -127,28 +127,17 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
   }
 
   async function shareProject(projectId: string) {
-    const project = projects.find((item) => item.id === projectId);
     const url = `${window.location.origin}${pathname}?project=${encodeURIComponent(projectId)}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: project?.title ?? "Project",
-          text: project?.description ?? "Check this project",
-          url,
-        });
-        setShareFeedback("Share dialog opened.");
-        return;
-      }
-
       await navigator.clipboard.writeText(url);
-      setShareFeedback("Project link copied.");
+      setShareFeedback("Link copied to clipboard.");
     } catch {
       try {
         window.prompt("Copy this project link", url);
-        setShareFeedback("Copy the project link from the dialog.");
+        setShareFeedback("Copy the link from the dialog.");
       } catch {
-        setShareFeedback("Could not share this project.");
+        setShareFeedback("Could not copy the project link.");
       }
     }
   }
