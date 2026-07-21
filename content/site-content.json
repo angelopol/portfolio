@@ -6,6 +6,13 @@
     "email": "angelopolgrossi@gmail.com",
     "location": "Valencia, Venezuela"
   },
+  "contact": {
+    "location": "Valencia, Venezuela · UTC-4",
+    "phone": "",
+    "email": "angelopolgrossi@gmail.com",
+    "githubUrl": "https://github.com/angelopol",
+    "linkedinUrl": "https://www.linkedin.com/in/angelopolgrossi"
+  },
   "theme": {
     "accent": "#0ea5a4",
     "accentSoft": "#7dd3fc",
@@ -92,6 +99,8 @@
     ],
     "profileImage": "/assets/profile.jpeg"
   },
+  "workExperience": [],
+  "education": [],
   "certifications": [],
   "projects": [
     {

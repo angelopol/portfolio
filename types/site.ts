@@ -106,11 +106,38 @@ export type SiteIdentity = {
   location: string;
 };
 
+export type ContactInfo = {
+  location: string;
+  phone: string;
+  email: string;
+  githubUrl: string;
+  linkedinUrl: string;
+};
+
+export type ReferenceLink = {
+  label: string;
+  url: string;
+};
+
+export type CareerEntry = {
+  id: string;
+  title: string;
+  organization: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  references: ReferenceLink[];
+};
+
 export type SiteContent = {
   site: SiteIdentity;
+  contact: ContactInfo;
   theme: ThemeConfig;
   home: HomeContent;
   about: AboutContent;
+  workExperience: CareerEntry[];
+  education: CareerEntry[];
   certifications: Certification[];
   projects: Project[];
   socials: SocialLink[];

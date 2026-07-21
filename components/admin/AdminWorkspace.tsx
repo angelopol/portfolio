@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   FiAward,
+  FiBookOpen,
   FiBriefcase,
   FiCheck,
   FiCode,
@@ -24,13 +25,16 @@ import {
 
 import type { Certification, Project, SiteContent } from "@/types/site";
 import { TranslationEditor } from "@/components/admin/TranslationEditor";
+import { CareerEntriesEditor } from "@/components/admin/CareerEntriesEditor";
 
-export type AdminSection = "dashboard" | "home" | "about" | "projects" | "certifications" | "settings";
+export type AdminSection = "dashboard" | "home" | "about" | "experience" | "education" | "projects" | "certifications" | "settings";
 
 const navigation: Array<{ section: AdminSection; label: string; description: string; icon: typeof FiGrid }> = [
   { section: "dashboard", label: "Resumen", description: "Estado general", icon: FiGrid },
   { section: "home", label: "Inicio", description: "Hero y métricas", icon: FiHome },
   { section: "about", label: "Perfil & skills", description: "Acerca de ti", icon: FiUser },
+  { section: "experience", label: "Experiencia", description: "Trayectoria laboral", icon: FiBriefcase },
+  { section: "education", label: "Educación", description: "Preparación profesional", icon: FiBookOpen },
   { section: "projects", label: "Proyectos", description: "Portfolio", icon: FiBriefcase },
   { section: "certifications", label: "Certificaciones", description: "Credenciales", icon: FiAward },
   { section: "settings", label: "Configuración", description: "Tema, CV y JSON", icon: FiSettings },
@@ -170,6 +174,39 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
 
   function updateProject(id: string, patch: Partial<Project>) {
     commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
+  }
+
+  function updateContact(field: "location" | "phone" | "email", value: string) {
+    commit({
+      ...draft,
+      contact: { ...draft.contact, [field]: value },
+      site: {
+        ...draft.site,
+        ...(field === "email" ? { email: value } : {}),
+        ...(field === "location" ? { location: value } : {}),
+      },
+      home:
+        field === "location"
+          ? { ...draft.home, location: value }
+          : draft.home,
+    });
+  }
+
+  function getSocialProfile(label: "GitHub" | "LinkedIn") {
+    return label === "GitHub" ? draft.contact.githubUrl : draft.contact.linkedinUrl;
+  }
+
+  function updateSocialProfile(label: "GitHub" | "LinkedIn", href: string) {
+    const contactField = label === "GitHub" ? "githubUrl" : "linkedinUrl";
+    const otherSocials = draft.socials.filter(
+      (social) => social.label.toLowerCase() !== label.toLowerCase()
+    );
+
+    commit({
+      ...draft,
+      contact: { ...draft.contact, [contactField]: href },
+      socials: href.trim() ? [...otherSocials, { label, href }] : otherSocials,
+    });
   }
 
   function updateCertification(id: string, patch: Partial<Certification>) {
@@ -327,7 +364,7 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
                   <Field label="Título"><textarea className={`${fieldClass} min-h-28`} value={draft.home.title} onChange={(event) => commit({ ...draft, home: { ...draft.home, title: event.target.value } })} /></Field>
                   <Field label="Subtítulo"><textarea className={`${fieldClass} min-h-20`} value={draft.home.subtitle} onChange={(event) => commit({ ...draft, home: { ...draft.home, subtitle: event.target.value } })} /></Field>
                   <Field label="Descripción"><textarea className={`${fieldClass} min-h-32`} value={draft.home.description} onChange={(event) => commit({ ...draft, home: { ...draft.home, description: event.target.value } })} /></Field>
-                  <div className="grid gap-4 sm:grid-cols-2"><Field label="Disponibilidad"><input className={fieldClass} value={draft.home.availability} onChange={(event) => commit({ ...draft, home: { ...draft.home, availability: event.target.value } })} /></Field><Field label="Ubicación"><input className={fieldClass} value={draft.home.location} onChange={(event) => commit({ ...draft, home: { ...draft.home, location: event.target.value } })} /></Field></div>
+                  <Field label="Disponibilidad"><input className={fieldClass} value={draft.home.availability} onChange={(event) => commit({ ...draft, home: { ...draft.home, availability: event.target.value } })} /></Field>
                   {(["primaryCta", "secondaryCta"] as const).map((cta) => <div key={cta} className="grid gap-4 rounded-2xl border border-white/10 p-4 sm:grid-cols-2"><Field label={`${cta === "primaryCta" ? "CTA principal" : "CTA secundario"} · texto`}><input className={fieldClass} value={draft.home[cta].label} onChange={(event) => commit({ ...draft, home: { ...draft.home, [cta]: { ...draft.home[cta], label: event.target.value } } })} /></Field><Field label="Enlace"><input className={fieldClass} value={draft.home[cta].href} onChange={(event) => commit({ ...draft, home: { ...draft.home, [cta]: { ...draft.home[cta], href: event.target.value } } })} /></Field></div>)}
                 </div>
                 <div className="space-y-6">
@@ -342,7 +379,38 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
             <section>
               <PageHeading eyebrow="Perfil" title="Acerca de ti, skills y tools" description="Centraliza tu identidad profesional y las listas que aparecen junto a tu presentación." />
               <div className="grid gap-6 xl:grid-cols-2">
-                <div className="glass-panel space-y-5 border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Identidad</h2><div className="grid gap-4 sm:grid-cols-2"><Field label="Nombre"><input className={fieldClass} value={draft.site.name} onChange={(event) => commit({ ...draft, site: { ...draft.site, name: event.target.value } })} /></Field><Field label="Iniciales"><input className={fieldClass} value={draft.site.initials} onChange={(event) => commit({ ...draft, site: { ...draft.site, initials: event.target.value } })} /></Field><Field label="Rol"><input className={fieldClass} value={draft.site.role} onChange={(event) => commit({ ...draft, site: { ...draft.site, role: event.target.value } })} /></Field><Field label="Email"><input className={fieldClass} value={draft.site.email} onChange={(event) => commit({ ...draft, site: { ...draft.site, email: event.target.value } })} /></Field></div><Field label="Titular"><textarea className={`${fieldClass} min-h-24`} value={draft.about.headline} onChange={(event) => commit({ ...draft, about: { ...draft.about, headline: event.target.value } })} /></Field><Field label="Resumen · un párrafo por línea"><textarea className={`${fieldClass} min-h-44`} value={draft.about.summary.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, summary: lines(event.target.value) } })} /></Field><Field label="Imagen de perfil · URL"><input className={fieldClass} value={draft.about.profileImage} onChange={(event) => commit({ ...draft, about: { ...draft.about, profileImage: event.target.value } })} /></Field><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiUploadCloud /> {uploading === "profile" ? "Subiendo..." : "Subir imagen"}<input className="hidden" type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", "profile"); if (url) commit({ ...draft, about: { ...draft.about, profileImage: url } }); }} /></label></div>
+                <div className="glass-panel space-y-5 border border-white/10 p-6">
+                  <h2 className="font-display text-xl font-semibold">Identidad</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Nombre"><input className={fieldClass} value={draft.site.name} onChange={(event) => commit({ ...draft, site: { ...draft.site, name: event.target.value } })} /></Field>
+                    <Field label="Iniciales"><input className={fieldClass} value={draft.site.initials} onChange={(event) => commit({ ...draft, site: { ...draft.site, initials: event.target.value } })} /></Field>
+                    <Field label="Rol"><input className={fieldClass} value={draft.site.role} onChange={(event) => commit({ ...draft, site: { ...draft.site, role: event.target.value } })} /></Field>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-5">
+                    <div className="mb-4">
+                      <h3 className="font-display text-lg font-semibold">Información de contacto</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Datos reutilizables para el banner y futuras funciones de contacto.</p>
+                    </div>
+                    <div className="grid gap-4">
+                      <Field label="Ubicación"><input className={fieldClass} value={draft.contact.location} onChange={(event) => updateContact("location", event.target.value)} placeholder="Valencia, Venezuela · UTC-4" /></Field>
+                      <Field label="Correo electrónico"><input type="email" className={fieldClass} value={draft.contact.email} onChange={(event) => updateContact("email", event.target.value)} placeholder="nombre@dominio.com" /></Field>
+                      <Field label="Teléfono"><input type="tel" className={fieldClass} value={draft.contact.phone} onChange={(event) => updateContact("phone", event.target.value)} placeholder="+58 000 0000000" /></Field>
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Perfiles profesionales</p>
+                        <div className="grid gap-4">
+                          <Field label="GitHub"><input type="url" className={fieldClass} value={getSocialProfile("GitHub")} onChange={(event) => updateSocialProfile("GitHub", event.target.value)} placeholder="https://github.com/usuario" /></Field>
+                          <Field label="LinkedIn"><input type="url" className={fieldClass} value={getSocialProfile("LinkedIn")} onChange={(event) => updateSocialProfile("LinkedIn", event.target.value)} placeholder="https://www.linkedin.com/in/usuario" /></Field>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Field label="Titular"><textarea className={`${fieldClass} min-h-24`} value={draft.about.headline} onChange={(event) => commit({ ...draft, about: { ...draft.about, headline: event.target.value } })} /></Field>
+                  <Field label="Resumen · un párrafo por línea"><textarea className={`${fieldClass} min-h-44`} value={draft.about.summary.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, summary: lines(event.target.value) } })} /></Field>
+                  <Field label="Imagen de perfil · URL"><input className={fieldClass} value={draft.about.profileImage} onChange={(event) => commit({ ...draft, about: { ...draft.about, profileImage: event.target.value } })} /></Field>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiUploadCloud /> {uploading === "profile" ? "Subiendo..." : "Subir imagen"}<input className="hidden" type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", "profile"); if (url) commit({ ...draft, about: { ...draft.about, profileImage: url } }); }} /></label>
+                </div>
                 <div className="space-y-6"><div className="glass-panel border border-white/10 p-6"><Field label="Tech stack · uno por línea"><textarea className={`${fieldClass} min-h-64`} value={draft.about.skillset.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, skillset: lines(event.target.value) } })} /></Field></div><div className="glass-panel border border-white/10 p-6"><Field label="Tools · uno por línea"><textarea className={`${fieldClass} min-h-56`} value={draft.about.toolset.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, toolset: lines(event.target.value) } })} /></Field></div><div className="glass-panel border border-white/10 p-6"><Field label="Áreas de enfoque · una por línea"><textarea className={`${fieldClass} min-h-44`} value={draft.about.focusAreas.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, focusAreas: lines(event.target.value) } })} /></Field></div></div>
               </div>
             </section>
@@ -353,6 +421,14 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Portfolio" title="Proyectos" description="Añade, actualiza y elimina proyectos sin mezclar su edición con el resto del sitio." /><button type="button" onClick={addProject} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nuevo proyecto</button></div>
               <div className="space-y-6">{draft.projects.map((project, index) => <details key={project.id} className="glass-panel border border-white/10 p-6" open={index === 0}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Galería · una URL por línea"><textarea className={`${fieldClass} min-h-28`} value={(project.gallery ?? []).join("\n")} onChange={(event) => updateProject(project.id, { gallery: lines(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
             </section>
+          )}
+
+          {section === "experience" && (
+            <CareerEntriesEditor content={draft} kind="workExperience" onChange={commit} />
+          )}
+
+          {section === "education" && (
+            <CareerEntriesEditor content={draft} kind="education" onChange={commit} />
           )}
 
           {section === "certifications" && (
@@ -366,8 +442,49 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
             <section>
               <PageHeading eyebrow="Sistema" title="Configuración avanzada" description="Ajusta el tema, enlaces sociales, CV o edita el contenido completo en JSON." />
               <div className="grid gap-6 xl:grid-cols-2"><div className="glass-panel border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Tema visual</h2><div className="mt-5 grid gap-3 sm:grid-cols-2">{Object.entries(draft.theme).map(([key, value]) => <label key={key} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3"><input type="color" value={value} onChange={(event) => commit({ ...draft, theme: { ...draft.theme, [key]: event.target.value } })} className="h-10 w-10 rounded-lg bg-transparent" /><span className="text-sm capitalize text-slate-300">{key}</span><span className="ml-auto text-xs text-slate-600">{value}</span></label>)}</div></div><div className="glass-panel space-y-5 border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Currículum</h2><Field label="Título"><input className={fieldClass} value={draft.resume.title} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, title: event.target.value } })} /></Field><Field label="Descripción"><textarea className={`${fieldClass} min-h-24`} value={draft.resume.description} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, description: event.target.value } })} /></Field><Field label="URL del PDF"><input className={fieldClass} value={draft.resume.downloadUrl} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, downloadUrl: event.target.value }, home: { ...draft.home, secondaryCta: { ...draft.home.secondaryCta, href: event.target.value } } })} /></Field><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiUploadCloud /> {uploading === "resume" ? "Subiendo..." : "Subir PDF"}<input type="file" accept="application/pdf" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "document", "resume"); if (url) commit({ ...draft, resume: { ...draft.resume, downloadUrl: url }, home: { ...draft.home, secondaryCta: { ...draft.home.secondaryCta, href: url } } }); }} /></label></div></div>
-              <div className="mt-6 glass-panel border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Enlaces sociales</h2><div className="mt-5 space-y-3">{draft.socials.map((social, index) => <div key={`${social.label}-${index}`} className="grid grid-cols-[0.5fr_1fr_auto] gap-3"><input className={fieldClass} value={social.label} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) })} /><input className={fieldClass} value={social.href} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, href: event.target.value } : item) })} /><button type="button" onClick={() => commit({ ...draft, socials: draft.socials.filter((_, itemIndex) => itemIndex !== index) })} className="px-3 text-rose-300"><FiTrash2 /></button></div>)}</div><button type="button" onClick={() => commit({ ...draft, socials: [...draft.socials, { label: "Nuevo", href: "https://" }] })} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm"><FiPlus /> Añadir enlace</button></div>
-              <div className="mt-6 glass-panel border border-white/10 p-6"><div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-semibold">JSON completo</h2><p className="mt-2 text-sm text-slate-500">Para ajustes avanzados o copias de seguridad.</p></div><FiFileText className="text-[var(--color-accent-soft)]" /></div><textarea spellCheck={false} className={`${fieldClass} mt-5 min-h-[520px] font-mono text-xs leading-6`} value={jsonValue} onChange={(event) => { const value = event.target.value; setJsonValue(value); try { const parsed = JSON.parse(value) as SiteContent; if (!Array.isArray(parsed.certifications)) parsed.certifications = []; parsed.translations = { es: parsed.translations?.es ?? {} }; setDraft(parsed); setDirty(true); setJsonError(null); } catch { setJsonError("El JSON no es válido. Corrígelo antes de guardar."); } }} />{jsonError && <p className="mt-3 text-sm text-rose-300">{jsonError}</p>}</div>
+              <div className="mt-6 glass-panel border border-white/10 p-6">
+                <h2 className="font-display text-xl font-semibold">Otros enlaces sociales</h2>
+                <p className="mt-2 text-sm text-slate-500">GitHub y LinkedIn se administran junto a la información de contacto en Perfil &amp; skills.</p>
+                <div className="mt-5 space-y-3">
+                  {draft.socials.map((social, index) => {
+                    if (["github", "linkedin"].includes(social.label.toLowerCase())) return null;
+                    return <div key={`${social.label}-${index}`} className="grid grid-cols-[0.5fr_1fr_auto] gap-3"><input className={fieldClass} value={social.label} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) })} /><input className={fieldClass} value={social.href} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, href: event.target.value } : item) })} /><button type="button" onClick={() => commit({ ...draft, socials: draft.socials.filter((_, itemIndex) => itemIndex !== index) })} className="px-3 text-rose-300"><FiTrash2 /></button></div>;
+                  })}
+                </div>
+                <button type="button" onClick={() => commit({ ...draft, socials: [...draft.socials, { label: "Nuevo", href: "https://" }] })} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm"><FiPlus /> Añadir enlace</button>
+              </div>
+              <div className="mt-6 glass-panel border border-white/10 p-6">
+                <div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-semibold">JSON completo</h2><p className="mt-2 text-sm text-slate-500">Para ajustes avanzados o copias de seguridad.</p></div><FiFileText className="text-[var(--color-accent-soft)]" /></div>
+                <textarea
+                  spellCheck={false}
+                  className={`${fieldClass} mt-5 min-h-[520px] font-mono text-xs leading-6`}
+                  value={jsonValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setJsonValue(value);
+                    try {
+                      const parsed = JSON.parse(value) as SiteContent;
+                      if (!Array.isArray(parsed.certifications)) parsed.certifications = [];
+                      if (!Array.isArray(parsed.workExperience)) parsed.workExperience = [];
+                      if (!Array.isArray(parsed.education)) parsed.education = [];
+                      parsed.translations = { es: parsed.translations?.es ?? {} };
+                      parsed.contact = {
+                        location: parsed.contact?.location || parsed.home.location || parsed.site.location,
+                        phone: parsed.contact?.phone || "",
+                        email: parsed.contact?.email || parsed.site.email,
+                        githubUrl: parsed.contact?.githubUrl || parsed.socials.find((social) => social.label.toLowerCase() === "github")?.href || "",
+                        linkedinUrl: parsed.contact?.linkedinUrl || parsed.socials.find((social) => social.label.toLowerCase() === "linkedin")?.href || "",
+                      };
+                      setDraft(parsed);
+                      setDirty(true);
+                      setJsonError(null);
+                    } catch {
+                      setJsonError("El JSON no es válido. Corrígelo antes de guardar.");
+                    }
+                  }}
+                />
+                {jsonError && <p className="mt-3 text-sm text-rose-300">{jsonError}</p>}
+              </div>
             </section>
           )}
 

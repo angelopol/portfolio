@@ -13,7 +13,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const sections: AdminSection[] = ["home", "about", "projects", "certifications", "settings"];
+const sections: AdminSection[] = [
+  "home",
+  "about",
+  "experience",
+  "education",
+  "projects",
+  "certifications",
+  "settings",
+];
 
 export default async function ControlRoomSectionPage({ params }: { params: { section: string } }) {
   noStore();

@@ -7,14 +7,31 @@ import {
   isMissingSupabaseTableError,
   isSupabaseConfigured,
 } from "@/lib/supabase";
-import type { SiteContent } from "@/types/site";
+import type { ContactInfo, SiteContent } from "@/types/site";
 
 const contentFilePath = path.join(process.cwd(), "content", "site-content.json");
 
 function normalizeSiteContent(content: SiteContent): SiteContent {
+  const legacyContent = content as SiteContent & { contact?: Partial<ContactInfo> };
+
   return {
     ...content,
+    contact: {
+      location: legacyContent.contact?.location || content.home.location || content.site.location,
+      phone: legacyContent.contact?.phone || "",
+      email: legacyContent.contact?.email || content.site.email,
+      githubUrl:
+        legacyContent.contact?.githubUrl ||
+        content.socials.find((social) => social.label.toLowerCase() === "github")?.href ||
+        "",
+      linkedinUrl:
+        legacyContent.contact?.linkedinUrl ||
+        content.socials.find((social) => social.label.toLowerCase() === "linkedin")?.href ||
+        "",
+    },
     certifications: Array.isArray(content.certifications) ? content.certifications : [],
+    workExperience: Array.isArray(content.workExperience) ? content.workExperience : [],
+    education: Array.isArray(content.education) ? content.education : [],
     translations: {
       es: content.translations?.es ?? {},
     },

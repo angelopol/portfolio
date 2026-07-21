@@ -10,11 +10,13 @@ import {
   FiLinkedin,
   FiMail,
   FiMapPin,
+  FiPhone,
 } from "react-icons/fi";
 
 import { FloatingNav } from "@/components/portfolio/floating-nav";
 import { CertificationsShowcase } from "@/components/portfolio/certifications-showcase";
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
+import { ProfessionalJourney } from "@/components/portfolio/professional-journey";
 import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 import type { SiteContent } from "@/types/site";
 
@@ -58,6 +60,17 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
   } as CSSProperties;
 
   const currentYear = new Date().getFullYear();
+  const socialLinks = [
+    ...(content.contact.githubUrl
+      ? [{ label: "GitHub", href: content.contact.githubUrl }]
+      : []),
+    ...(content.contact.linkedinUrl
+      ? [{ label: "LinkedIn", href: content.contact.linkedinUrl }]
+      : []),
+    ...content.socials.filter(
+      (social) => !["github", "linkedin"].includes(social.label.toLowerCase()) && social.href
+    ),
+  ];
 
   return (
     <div style={themeStyle} className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
@@ -139,10 +152,30 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
                   {content.site.name}
                 </h2>
                 <div className="mt-4 space-y-2 text-sm text-[var(--color-muted)]">
-                  <p className="inline-flex items-center gap-2">
-                    <FiMapPin />
-                    {content.home.location}
-                  </p>
+                  {content.contact.location && (
+                    <p className="flex items-center gap-2">
+                      <FiMapPin className="shrink-0" />
+                      {content.contact.location}
+                    </p>
+                  )}
+                  {content.contact.email && (
+                    <a
+                      href={`mailto:${content.contact.email}`}
+                      className="flex w-fit items-center gap-2 transition hover:text-[var(--color-text)]"
+                    >
+                      <FiMail className="shrink-0" />
+                      {content.contact.email}
+                    </a>
+                  )}
+                  {content.contact.phone && (
+                    <a
+                      href={`tel:${content.contact.phone.replace(/[^+\d]/g, "")}`}
+                      className="flex w-fit items-center gap-2 transition hover:text-[var(--color-text)]"
+                    >
+                      <FiPhone className="shrink-0" />
+                      {content.contact.phone}
+                    </a>
+                  )}
                   <p>{content.home.availability}</p>
                 </div>
               </div>
@@ -157,7 +190,7 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {content.socials.map((social) => {
+              {socialLinks.map((social) => {
                 const Icon = getSocialIcon(social.label);
 
                 return (
@@ -238,6 +271,12 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
           </div>
         </section>
 
+        <ProfessionalJourney
+          workExperience={content.workExperience}
+          education={content.education}
+          language={language}
+        />
+
         <section id="projects" className="section-shell py-8 lg:py-16">
           <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -301,7 +340,7 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
           </div>
 
           <div className="flex flex-wrap gap-4">
-            {content.socials.map((social) => (
+            {socialLinks.map((social) => (
               <a
                 key={`footer-${social.label}`}
                 href={social.href}

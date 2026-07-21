@@ -5,7 +5,7 @@ import { FiGlobe, FiZap } from "react-icons/fi";
 
 import type { SiteContent } from "@/types/site";
 
-type TranslationSection = "home" | "about" | "projects" | "certifications" | "settings";
+type TranslationSection = "home" | "about" | "experience" | "education" | "projects" | "certifications" | "settings";
 
 type TranslationFieldDefinition = {
   key: string;
@@ -22,7 +22,6 @@ function createFields(content: SiteContent, section: TranslationSection): Transl
       { key: "home.subtitle", label: "Subtítulo", source: content.home.subtitle, multiline: true },
       { key: "home.description", label: "Descripción", source: content.home.description, multiline: true },
       { key: "home.availability", label: "Disponibilidad", source: content.home.availability },
-      { key: "home.location", label: "Ubicación", source: content.home.location },
       { key: "home.primaryCta.label", label: "CTA principal", source: content.home.primaryCta.label },
       { key: "home.secondaryCta.label", label: "CTA secundario", source: content.home.secondaryCta.label },
       ...content.home.metrics.flatMap((metric, index) => [
@@ -41,13 +40,32 @@ function createFields(content: SiteContent, section: TranslationSection): Transl
     return [
       { key: "site.name", label: "Nombre", source: content.site.name },
       { key: "site.role", label: "Rol", source: content.site.role },
-      { key: "site.location", label: "Ubicación del perfil", source: content.site.location },
+      { key: "contact.location", label: "Ubicación de contacto", source: content.contact.location },
       { key: "about.headline", label: "Titular", source: content.about.headline, multiline: true },
       ...content.about.summary.map((item, index) => ({ key: `about.summary.${index}`, label: `Resumen ${index + 1}`, source: item, multiline: true })),
       ...content.about.skillset.map((item, index) => ({ key: `about.skillset.${index}`, label: `Tech stack ${index + 1}`, source: item })),
       ...content.about.toolset.map((item, index) => ({ key: `about.toolset.${index}`, label: `Tool ${index + 1}`, source: item })),
       ...content.about.focusAreas.map((item, index) => ({ key: `about.focusAreas.${index}`, label: `Área de enfoque ${index + 1}`, source: item })),
     ];
+  }
+
+  if (section === "experience" || section === "education") {
+    const collectionKey = section === "experience" ? "workExperience" : "education";
+    const entries = content[collectionKey];
+
+    return entries.flatMap((entry) => [
+      { key: `${collectionKey}.${entry.id}.title`, label: `${entry.title} · título`, source: entry.title },
+      { key: `${collectionKey}.${entry.id}.organization`, label: `${entry.title} · organización`, source: entry.organization },
+      { key: `${collectionKey}.${entry.id}.location`, label: `${entry.title} · ubicación`, source: entry.location },
+      { key: `${collectionKey}.${entry.id}.startDate`, label: `${entry.title} · fecha de inicio`, source: entry.startDate },
+      { key: `${collectionKey}.${entry.id}.endDate`, label: `${entry.title} · fecha de fin`, source: entry.endDate },
+      { key: `${collectionKey}.${entry.id}.description`, label: `${entry.title} · descripción`, source: entry.description, multiline: true },
+      ...entry.references.map((reference, index) => ({
+        key: `${collectionKey}.${entry.id}.references.${index}.label`,
+        label: `${entry.title} · referencia ${index + 1}`,
+        source: reference.label,
+      })),
+    ]);
   }
 
   if (section === "projects") {
