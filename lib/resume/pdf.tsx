@@ -255,7 +255,7 @@ async function fetchRemoteImage(source: string) {
 
   for (let redirects = 0; redirects <= 3; redirects += 1) {
     const response = await fetch(current, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(2500),
       cache: "no-store",
       redirect: "manual",
     });

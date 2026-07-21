@@ -10,7 +10,8 @@ import type { ResumeGenerationRequest } from "@/types/resume";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Keep this compatible with Vercel Hobby's per-function ceiling.
+export const maxDuration = 60;
 
 const MAX_REQUEST_BYTES = 1_000_000;
 

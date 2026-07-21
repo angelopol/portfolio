@@ -240,7 +240,7 @@ ${JSON.stringify(content, null, 2)}
         },
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(40000),
     }
   );
 
