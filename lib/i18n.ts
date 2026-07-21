@@ -108,12 +108,19 @@ export function localizeSiteContent(content: SiteContent, language: SiteLanguage
     })),
     resume: {
       ...content.resume,
+      fullName: translated("resume.fullName", content.resume.fullName),
       title: translated("resume.title", content.resume.title),
       description: translated("resume.description", content.resume.description),
       previewTitle: translated("resume.previewTitle", content.resume.previewTitle),
       previewText: translated("resume.previewText", content.resume.previewText),
       openLabel: translated("resume.openLabel", content.resume.openLabel),
       downloadLabel: translated("resume.downloadLabel", content.resume.downloadLabel),
+      softSkills: content.resume.softSkills.map((item, index) =>
+        translated(`resume.softSkills.${index}`, item)
+      ),
+      languages: content.resume.languages.map((item, index) =>
+        translated(`resume.languages.${index}`, item)
+      ),
     },
   };
 }

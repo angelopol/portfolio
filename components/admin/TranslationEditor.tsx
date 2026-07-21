@@ -86,12 +86,15 @@ function createFields(content: SiteContent, section: TranslationSection): Transl
   }
 
   return [
+    { key: "resume.fullName", label: "Currículum · nombre completo", source: content.resume.fullName },
     { key: "resume.title", label: "Currículum · título", source: content.resume.title },
     { key: "resume.description", label: "Currículum · descripción", source: content.resume.description, multiline: true },
     { key: "resume.previewTitle", label: "Vista del CV · título", source: content.resume.previewTitle },
     { key: "resume.previewText", label: "Vista del CV · descripción", source: content.resume.previewText, multiline: true },
     { key: "resume.openLabel", label: "Botón abrir CV", source: content.resume.openLabel },
     { key: "resume.downloadLabel", label: "Botón descargar CV", source: content.resume.downloadLabel },
+    ...content.resume.softSkills.map((item, index) => ({ key: `resume.softSkills.${index}`, label: `Habilidad blanda ${index + 1}`, source: item })),
+    ...content.resume.languages.map((item, index) => ({ key: `resume.languages.${index}`, label: `Idioma ${index + 1}`, source: item })),
     ...content.socials.map((social, index) => ({ key: `socials.${index}.label`, label: `Red social ${index + 1}`, source: social.label })),
   ];
 }

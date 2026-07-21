@@ -11,7 +11,7 @@ import type { ContactInfo, SiteContent } from "@/types/site";
 
 const contentFilePath = path.join(process.cwd(), "content", "site-content.json");
 
-function normalizeSiteContent(content: SiteContent): SiteContent {
+export function normalizeSiteContent(content: SiteContent): SiteContent {
   const legacyContent = content as SiteContent & { contact?: Partial<ContactInfo> };
 
   return {
@@ -28,10 +28,17 @@ function normalizeSiteContent(content: SiteContent): SiteContent {
         legacyContent.contact?.linkedinUrl ||
         content.socials.find((social) => social.label.toLowerCase() === "linkedin")?.href ||
         "",
+      portfolioUrl: legacyContent.contact?.portfolioUrl || "",
     },
     certifications: Array.isArray(content.certifications) ? content.certifications : [],
     workExperience: Array.isArray(content.workExperience) ? content.workExperience : [],
     education: Array.isArray(content.education) ? content.education : [],
+    resume: {
+      ...content.resume,
+      fullName: content.resume.fullName || content.site.name,
+      softSkills: Array.isArray(content.resume.softSkills) ? content.resume.softSkills : [],
+      languages: Array.isArray(content.resume.languages) ? content.resume.languages : [],
+    },
     translations: {
       es: content.translations?.es ?? {},
     },

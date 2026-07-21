@@ -45,6 +45,9 @@ if (customPublicPattern) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverComponentsExternalPackages: ["@react-pdf/renderer", "unpdf"],
+  },
   images: {
     remotePatterns,
   },

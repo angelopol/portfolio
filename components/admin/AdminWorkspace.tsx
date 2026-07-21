@@ -26,8 +26,9 @@ import {
 import type { Certification, Project, SiteContent } from "@/types/site";
 import { TranslationEditor } from "@/components/admin/TranslationEditor";
 import { CareerEntriesEditor } from "@/components/admin/CareerEntriesEditor";
+import { ResumeBuilder } from "@/components/admin/ResumeBuilder";
 
-export type AdminSection = "dashboard" | "home" | "about" | "experience" | "education" | "projects" | "certifications" | "settings";
+export type AdminSection = "dashboard" | "home" | "about" | "experience" | "education" | "projects" | "certifications" | "resume-builder" | "settings";
 
 const navigation: Array<{ section: AdminSection; label: string; description: string; icon: typeof FiGrid }> = [
   { section: "dashboard", label: "Resumen", description: "Estado general", icon: FiGrid },
@@ -37,6 +38,7 @@ const navigation: Array<{ section: AdminSection; label: string; description: str
   { section: "education", label: "Educación", description: "Preparación profesional", icon: FiBookOpen },
   { section: "projects", label: "Proyectos", description: "Portfolio", icon: FiBriefcase },
   { section: "certifications", label: "Certificaciones", description: "Credenciales", icon: FiAward },
+  { section: "resume-builder", label: "Generar CV", description: "Gemini + PDF", icon: FiFileText },
   { section: "settings", label: "Configuración", description: "Tema, CV y JSON", icon: FiSettings },
 ];
 
@@ -176,7 +178,7 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
     commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
   }
 
-  function updateContact(field: "location" | "phone" | "email", value: string) {
+  function updateContact(field: "location" | "phone" | "email" | "portfolioUrl", value: string) {
     commit({
       ...draft,
       contact: { ...draft.contact, [field]: value },
@@ -396,6 +398,7 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
                       <Field label="Ubicación"><input className={fieldClass} value={draft.contact.location} onChange={(event) => updateContact("location", event.target.value)} placeholder="Valencia, Venezuela · UTC-4" /></Field>
                       <Field label="Correo electrónico"><input type="email" className={fieldClass} value={draft.contact.email} onChange={(event) => updateContact("email", event.target.value)} placeholder="nombre@dominio.com" /></Field>
                       <Field label="Teléfono"><input type="tel" className={fieldClass} value={draft.contact.phone} onChange={(event) => updateContact("phone", event.target.value)} placeholder="+58 000 0000000" /></Field>
+                      <Field label="Portfolio"><input type="url" className={fieldClass} value={draft.contact.portfolioUrl} onChange={(event) => updateContact("portfolioUrl", event.target.value)} placeholder="https://tudominio.com" /></Field>
                       <div className="border-t border-white/10 pt-4">
                         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Perfiles profesionales</p>
                         <div className="grid gap-4">
@@ -438,6 +441,10 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
             </section>
           )}
 
+          {section === "resume-builder" && (
+            <ResumeBuilder content={draft} onChange={commit} />
+          )}
+
           {section === "settings" && (
             <section>
               <PageHeading eyebrow="Sistema" title="Configuración avanzada" description="Ajusta el tema, enlaces sociales, CV o edita el contenido completo en JSON." />
@@ -474,6 +481,13 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
                         email: parsed.contact?.email || parsed.site.email,
                         githubUrl: parsed.contact?.githubUrl || parsed.socials.find((social) => social.label.toLowerCase() === "github")?.href || "",
                         linkedinUrl: parsed.contact?.linkedinUrl || parsed.socials.find((social) => social.label.toLowerCase() === "linkedin")?.href || "",
+                        portfolioUrl: parsed.contact?.portfolioUrl || "",
+                      };
+                      parsed.resume = {
+                        ...parsed.resume,
+                        fullName: parsed.resume?.fullName || parsed.site.name,
+                        softSkills: Array.isArray(parsed.resume?.softSkills) ? parsed.resume.softSkills : [],
+                        languages: Array.isArray(parsed.resume?.languages) ? parsed.resume.languages : [],
                       };
                       setDraft(parsed);
                       setDirty(true);
@@ -488,7 +502,7 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
             </section>
           )}
 
-          {section !== "dashboard" && (
+          {section !== "dashboard" && section !== "resume-builder" && (
             <TranslationEditor content={draft} section={section} onChange={commit} />
           )}
         </div>

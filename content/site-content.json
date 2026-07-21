@@ -11,7 +11,8 @@
     "phone": "",
     "email": "angelopolgrossi@gmail.com",
     "githubUrl": "https://github.com/angelopol",
-    "linkedinUrl": "https://www.linkedin.com/in/angelopolgrossi"
+    "linkedinUrl": "https://www.linkedin.com/in/angelopolgrossi",
+    "portfolioUrl": "https://angelopol.com"
   },
   "theme": {
     "accent": "#0ea5a4",
@@ -176,13 +177,27 @@
     }
   ],
   "resume": {
+    "fullName": "Angelo Salvador Polgrossi Mieres",
     "title": "Resume and professional profile",
     "description": "Keep a downloadable resume always available while the portfolio highlights experience, stack, and featured projects.",
     "previewTitle": "Desktop resume preview",
     "previewText": "On desktop, the resume is displayed in an embedded preview. On mobile, some browsers may download the PDF automatically, so the experience is supported with direct actions.",
     "downloadUrl": "/assets/CV - Angelo Polgrossi - English.pdf",
     "openLabel": "Open resume",
-    "downloadLabel": "Download resume"
+    "downloadLabel": "Download resume",
+    "softSkills": [
+      "Teamwork",
+      "Leadership",
+      "Problem solving",
+      "Effective communication",
+      "Adaptability",
+      "Proactivity",
+      "Fast learning"
+    ],
+    "languages": [
+      "Spanish — Native",
+      "English"
+    ]
   },
   "translations": {
     "es": {}

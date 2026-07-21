@@ -89,6 +89,7 @@ export type MediaLibrary = {
 };
 
 export type ResumeContent = {
+  fullName: string;
   title: string;
   description: string;
   previewTitle: string;
@@ -96,6 +97,8 @@ export type ResumeContent = {
   downloadUrl: string;
   openLabel: string;
   downloadLabel: string;
+  softSkills: string[];
+  languages: string[];
 };
 
 export type SiteIdentity = {
@@ -112,6 +115,7 @@ export type ContactInfo = {
   email: string;
   githubUrl: string;
   linkedinUrl: string;
+  portfolioUrl: string;
 };
 
 export type ReferenceLink = {
