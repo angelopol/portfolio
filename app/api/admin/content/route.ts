@@ -30,6 +30,7 @@ export async function PUT(request: Request) {
 
   revalidatePath("/");
   revalidatePath("/control-room");
+  revalidatePath("/control-room/[section]", "page");
 
   return NextResponse.json({ ok: true });
 }

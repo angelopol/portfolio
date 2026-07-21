@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { cookies } from "next/headers";
 
-import { AdminClient } from "@/components/admin/AdminClient";
+import { AdminWorkspace } from "@/components/admin/AdminWorkspace";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { ADMIN_COOKIE_NAME, hasAdminSession, isAdminConfigured } from "@/lib/auth";
 import { getSiteContent } from "@/lib/site-content";
@@ -28,5 +28,5 @@ export default async function ControlRoomPage() {
 
   const content = await getSiteContent();
 
-  return <AdminClient initialContent={content} />;
+  return <AdminWorkspace initialContent={content} section="dashboard" />;
 }

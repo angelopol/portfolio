@@ -11,9 +11,16 @@ import type { SiteContent } from "@/types/site";
 
 const contentFilePath = path.join(process.cwd(), "content", "site-content.json");
 
+function normalizeSiteContent(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    certifications: Array.isArray(content.certifications) ? content.certifications : [],
+  };
+}
+
 async function getLocalSiteContent(): Promise<SiteContent> {
   const rawContent = await fs.readFile(contentFilePath, "utf8");
-  return JSON.parse(rawContent) as SiteContent;
+  return normalizeSiteContent(JSON.parse(rawContent) as SiteContent);
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
@@ -38,7 +45,7 @@ export async function getSiteContent(): Promise<SiteContent> {
   }
 
   if (data?.content) {
-    return data.content as SiteContent;
+    return normalizeSiteContent(data.content as SiteContent);
   }
 
   const seededContent = await getLocalSiteContent();

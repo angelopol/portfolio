@@ -92,6 +92,7 @@
     ],
     "profileImage": "/assets/profile.jpeg"
   },
+  "certifications": [],
   "projects": [
     {
       "id": "ezpass",

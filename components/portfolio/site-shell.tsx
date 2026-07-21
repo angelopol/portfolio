@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 
 import { FloatingNav } from "@/components/portfolio/floating-nav";
+import { CertificationsShowcase } from "@/components/portfolio/certifications-showcase";
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
 import type { SiteContent } from "@/types/site";
 
@@ -231,6 +232,8 @@ export function SiteShell({ content }: { content: SiteContent }) {
                   ))}
                 </div>
               </div>
+
+              <CertificationsShowcase certifications={content.certifications} />
             </div>
           </div>
         </section>

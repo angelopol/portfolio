@@ -97,6 +97,7 @@ export async function POST(request: Request) {
 
   revalidatePath("/");
   revalidatePath("/control-room");
+  revalidatePath("/control-room/[section]", "page");
 
   return NextResponse.json({ item });
 }

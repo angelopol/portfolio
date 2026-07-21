@@ -58,6 +58,19 @@ export type SocialLink = {
   href: string;
 };
 
+export type Certification = {
+  id: string;
+  title: string;
+  issuer: string;
+  issuedAt?: string;
+  credentialId?: string;
+  description: string;
+  certificateUrl: string;
+  verificationUrl: string;
+  organizationUrl: string;
+  logoUrl?: string;
+};
+
 export type MediaKind = "image" | "document";
 
 export type MediaItem = {
@@ -98,6 +111,7 @@ export type SiteContent = {
   theme: ThemeConfig;
   home: HomeContent;
   about: AboutContent;
+  certifications: Certification[];
   projects: Project[];
   socials: SocialLink[];
   resume: ResumeContent;

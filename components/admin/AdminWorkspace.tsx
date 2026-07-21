@@ -1,0 +1,376 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FiAward,
+  FiBriefcase,
+  FiCheck,
+  FiCode,
+  FiEye,
+  FiFileText,
+  FiGrid,
+  FiHome,
+  FiImage,
+  FiLogOut,
+  FiPlus,
+  FiSave,
+  FiSettings,
+  FiTrash2,
+  FiUploadCloud,
+  FiUser,
+} from "react-icons/fi";
+
+import type { Certification, Project, SiteContent } from "@/types/site";
+
+export type AdminSection = "dashboard" | "home" | "about" | "projects" | "certifications" | "settings";
+
+const navigation: Array<{ section: AdminSection; label: string; description: string; icon: typeof FiGrid }> = [
+  { section: "dashboard", label: "Resumen", description: "Estado general", icon: FiGrid },
+  { section: "home", label: "Inicio", description: "Hero y métricas", icon: FiHome },
+  { section: "about", label: "Perfil & skills", description: "Acerca de ti", icon: FiUser },
+  { section: "projects", label: "Proyectos", description: "Portfolio", icon: FiBriefcase },
+  { section: "certifications", label: "Certificaciones", description: "Credenciales", icon: FiAward },
+  { section: "settings", label: "Configuración", description: "Tema, CV y JSON", icon: FiSettings },
+];
+
+const fieldClass =
+  "w-full rounded-2xl border border-white/10 bg-slate-950/65 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--color-accent)]";
+const labelClass = "mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400";
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function lines(value: string) {
+  return value.split("\n").map((item) => item.trim()).filter(Boolean);
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className={labelClass}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return (
+    <div className="mb-7">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--color-accent-soft)]">{eyebrow}</p>
+      <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
+      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">{description}</p>
+    </div>
+  );
+}
+
+export function AdminWorkspace({ initialContent, section }: { initialContent: SiteContent; section: AdminSection }) {
+  const router = useRouter();
+  const [draft, setDraft] = useState(initialContent);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [resolvingLogo, setResolvingLogo] = useState<string | null>(null);
+  const [jsonValue, setJsonValue] = useState(JSON.stringify(initialContent, null, 2));
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  const currentNav = navigation.find((item) => item.section === section) ?? navigation[0];
+
+  const stats = useMemo(
+    () => [
+      { label: "Proyectos", value: draft.projects.length, icon: FiBriefcase, href: "/control-room/projects" },
+      { label: "Skills", value: draft.about.skillset.length, icon: FiCode, href: "/control-room/about" },
+      { label: "Certificaciones", value: draft.certifications.length, icon: FiAward, href: "/control-room/certifications" },
+    ],
+    [draft]
+  );
+
+  function commit(next: SiteContent) {
+    setDraft(next);
+    setJsonValue(JSON.stringify(next, null, 2));
+    setDirty(true);
+    setMessage(null);
+  }
+
+  async function save(nextDraft = draft, quiet = false) {
+    setSaving(true);
+    if (!quiet) setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextDraft),
+      });
+
+      if (!response.ok) throw new Error("No se pudo guardar el contenido.");
+      setDirty(false);
+      setSavedAt(new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }));
+      if (!quiet) setMessage("Cambios guardados correctamente.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!dirty || jsonError) return;
+    const timeout = window.setTimeout(() => void save(draft, true), 1800);
+    return () => window.clearTimeout(timeout);
+    // save deliberately tracks the latest draft through this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, draft, jsonError]);
+
+  useEffect(() => {
+    function warnBeforeLeaving(event: BeforeUnloadEvent) {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [dirty]);
+
+  async function logout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/control-room");
+    router.refresh();
+  }
+
+  async function uploadAsset(file: File, kind: "image" | "document", key: string) {
+    setUploading(key);
+    setMessage(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("kind", kind);
+      const response = await fetch("/api/admin/media", { method: "POST", body });
+      const data = (await response.json()) as { item?: { url: string }; error?: string };
+      if (!response.ok || !data.item) throw new Error(data.error ?? "No se pudo subir el archivo.");
+      return data.item.url;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo subir el archivo.");
+      return null;
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  function updateProject(id: string, patch: Partial<Project>) {
+    commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
+  }
+
+  function updateCertification(id: string, patch: Partial<Certification>) {
+    commit({
+      ...draft,
+      certifications: draft.certifications.map((certification) =>
+        certification.id === id ? { ...certification, ...patch } : certification
+      ),
+    });
+  }
+
+  function addProject() {
+    const id = `project-${Date.now()}`;
+    commit({
+      ...draft,
+      projects: [
+        ...draft.projects,
+        { id, title: "Nuevo proyecto", description: "", stack: [], image: "/assets/home-main.svg" },
+      ],
+    });
+  }
+
+  function addCertification() {
+    const id = `certification-${Date.now()}`;
+    commit({
+      ...draft,
+      certifications: [
+        ...draft.certifications,
+        {
+          id,
+          title: "Nueva certificación",
+          issuer: "",
+          description: "",
+          certificateUrl: "",
+          verificationUrl: "",
+          organizationUrl: "",
+          logoUrl: "",
+        },
+      ],
+    });
+  }
+
+  async function resolveLinkedInLogo(certification: Certification) {
+    if (!certification.organizationUrl) {
+      setMessage("Primero añade el enlace de empresa o escuela en LinkedIn.");
+      return;
+    }
+    setResolvingLogo(certification.id);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/linkedin-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: certification.organizationUrl }),
+      });
+      const data = (await response.json()) as { logoUrl?: string; error?: string };
+      if (!response.ok || !data.logoUrl) throw new Error(data.error ?? "No se encontró el logo.");
+      updateCertification(certification.id, { logoUrl: data.logoUrl });
+      setMessage("Logo obtenido desde la página pública de LinkedIn.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo obtener el logo.");
+    } finally {
+      setResolvingLogo(null);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-[var(--color-background)] text-white">
+      <div className="mx-auto grid min-h-screen max-w-[1600px] lg:grid-cols-[280px_1fr]">
+        <aside className="border-b border-white/10 bg-slate-950/35 p-5 backdrop-blur-xl lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:p-6">
+          <div className="flex items-center justify-between lg:block">
+            <Link href="/control-room" className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-accent)] font-display font-bold shadow-glow">CR</span>
+              <div>
+                <p className="font-display font-semibold">Control Room</p>
+                <p className="text-xs text-slate-500">Portfolio CMS</p>
+              </div>
+            </Link>
+            <Link href="/" target="_blank" className="rounded-xl border border-white/10 p-3 text-slate-300 transition hover:bg-white/10 lg:hidden" aria-label="Ver sitio">
+              <FiEye />
+            </Link>
+          </div>
+
+          <nav className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1" aria-label="Secciones del panel">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const active = item.section === section;
+              return (
+                <Link
+                  key={item.section}
+                  href={item.section === "dashboard" ? "/control-room" : `/control-room/${item.section}`}
+                  className={`flex items-center gap-3 rounded-2xl border px-3 py-3 transition ${active ? "border-[var(--color-accent)]/50 bg-[var(--color-accent)]/15 text-white" : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/5 hover:text-white"}`}
+                >
+                  <Icon className="shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">{item.label}</span>
+                    <span className="hidden text-xs text-slate-500 lg:block">{item.description}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-6 hidden space-y-2 border-t border-white/10 pt-5 lg:block">
+            <Link href="/" target="_blank" className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"><FiEye /> Ver portfolio</Link>
+            <button type="button" onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-100"><FiLogOut /> Cerrar sesión</button>
+          </div>
+        </aside>
+
+        <div className="min-w-0 p-5 sm:p-8 lg:p-10">
+          <header className="mb-8 flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Control Room / {currentNav.label}</p>
+              <p className="mt-1 text-sm text-slate-300">{dirty ? "Cambios pendientes de sincronización" : savedAt ? `Sincronizado a las ${savedAt}` : "Contenido sincronizado"}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {message && <p className="max-w-sm text-xs text-[var(--color-accent-soft)]">{message}</p>}
+              <button type="button" onClick={() => void save()} disabled={saving || Boolean(jsonError)} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50">
+                {saving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : dirty ? <FiSave /> : <FiCheck />}
+                {saving ? "Guardando" : dirty ? "Guardar" : "Guardado"}
+              </button>
+            </div>
+          </header>
+
+          {section === "dashboard" && (
+            <section>
+              <PageHeading eyebrow="Vista general" title="Todo tu portfolio, mejor organizado." description="Cada grupo de contenido vive ahora en su propia página. Entra a una sección, edita y el guardado automático se encargará del resto." />
+              <div className="grid gap-4 md:grid-cols-3">
+                {stats.map((stat) => {
+                  const Icon = stat.icon;
+                  return (
+                    <Link key={stat.label} href={stat.href} className="glass-panel group border border-white/10 p-6 transition hover:-translate-y-1 hover:border-[var(--color-accent)]/40">
+                      <div className="flex items-center justify-between"><Icon className="text-xl text-[var(--color-accent-soft)]" /><span className="text-3xl font-semibold">{stat.value}</span></div>
+                      <p className="mt-7 font-semibold">{stat.label}</p>
+                      <p className="mt-1 text-sm text-slate-500">Gestionar contenido →</p>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-8 grid gap-5 lg:grid-cols-2">
+                {navigation.slice(1).map((item) => {
+                  const Icon = item.icon;
+                  return <Link key={item.section} href={`/control-room/${item.section}`} className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.035] p-5 transition hover:bg-white/[0.07]"><span className="rounded-2xl bg-white/5 p-4 text-[var(--color-accent-soft)]"><Icon /></span><span><span className="block font-semibold">{item.label}</span><span className="mt-1 block text-sm text-slate-500">{item.description}</span></span></Link>;
+                })}
+              </div>
+            </section>
+          )}
+
+          {section === "home" && (
+            <section>
+              <PageHeading eyebrow="Landing" title="Inicio y presentación" description="Edita el mensaje principal, las llamadas a la acción, métricas y puntos destacados del hero." />
+              <div className="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+                <div className="glass-panel space-y-5 border border-white/10 p-6">
+                  <Field label="Etiqueta superior"><input className={fieldClass} value={draft.home.eyebrow} onChange={(event) => commit({ ...draft, home: { ...draft.home, eyebrow: event.target.value } })} /></Field>
+                  <Field label="Título"><textarea className={`${fieldClass} min-h-28`} value={draft.home.title} onChange={(event) => commit({ ...draft, home: { ...draft.home, title: event.target.value } })} /></Field>
+                  <Field label="Subtítulo"><textarea className={`${fieldClass} min-h-20`} value={draft.home.subtitle} onChange={(event) => commit({ ...draft, home: { ...draft.home, subtitle: event.target.value } })} /></Field>
+                  <Field label="Descripción"><textarea className={`${fieldClass} min-h-32`} value={draft.home.description} onChange={(event) => commit({ ...draft, home: { ...draft.home, description: event.target.value } })} /></Field>
+                  <div className="grid gap-4 sm:grid-cols-2"><Field label="Disponibilidad"><input className={fieldClass} value={draft.home.availability} onChange={(event) => commit({ ...draft, home: { ...draft.home, availability: event.target.value } })} /></Field><Field label="Ubicación"><input className={fieldClass} value={draft.home.location} onChange={(event) => commit({ ...draft, home: { ...draft.home, location: event.target.value } })} /></Field></div>
+                  {(["primaryCta", "secondaryCta"] as const).map((cta) => <div key={cta} className="grid gap-4 rounded-2xl border border-white/10 p-4 sm:grid-cols-2"><Field label={`${cta === "primaryCta" ? "CTA principal" : "CTA secundario"} · texto`}><input className={fieldClass} value={draft.home[cta].label} onChange={(event) => commit({ ...draft, home: { ...draft.home, [cta]: { ...draft.home[cta], label: event.target.value } } })} /></Field><Field label="Enlace"><input className={fieldClass} value={draft.home[cta].href} onChange={(event) => commit({ ...draft, home: { ...draft.home, [cta]: { ...draft.home[cta], href: event.target.value } } })} /></Field></div>)}
+                </div>
+                <div className="space-y-6">
+                  <div className="glass-panel border border-white/10 p-6"><Field label="Highlights · uno por línea"><textarea className={`${fieldClass} min-h-52`} value={draft.home.highlights.join("\n")} onChange={(event) => commit({ ...draft, home: { ...draft.home, highlights: lines(event.target.value) } })} /></Field></div>
+                  <div className="glass-panel border border-white/10 p-6"><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-xl font-semibold">Métricas</h2><button type="button" onClick={() => commit({ ...draft, home: { ...draft.home, metrics: [...draft.home.metrics, { label: "Nueva métrica", value: "" }] } })} className="rounded-xl border border-white/10 p-2 hover:bg-white/10"><FiPlus /></button></div>{draft.home.metrics.map((metric, index) => <div key={index} className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2"><input className={fieldClass} value={metric.label} onChange={(event) => commit({ ...draft, home: { ...draft.home, metrics: draft.home.metrics.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) } })} /><input className={fieldClass} value={metric.value} onChange={(event) => commit({ ...draft, home: { ...draft.home, metrics: draft.home.metrics.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item) } })} /><button type="button" onClick={() => commit({ ...draft, home: { ...draft.home, metrics: draft.home.metrics.filter((_, itemIndex) => itemIndex !== index) } })} className="px-3 text-rose-300"><FiTrash2 /></button></div>)}</div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {section === "about" && (
+            <section>
+              <PageHeading eyebrow="Perfil" title="Acerca de ti, skills y tools" description="Centraliza tu identidad profesional y las listas que aparecen junto a tu presentación." />
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="glass-panel space-y-5 border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Identidad</h2><div className="grid gap-4 sm:grid-cols-2"><Field label="Nombre"><input className={fieldClass} value={draft.site.name} onChange={(event) => commit({ ...draft, site: { ...draft.site, name: event.target.value } })} /></Field><Field label="Iniciales"><input className={fieldClass} value={draft.site.initials} onChange={(event) => commit({ ...draft, site: { ...draft.site, initials: event.target.value } })} /></Field><Field label="Rol"><input className={fieldClass} value={draft.site.role} onChange={(event) => commit({ ...draft, site: { ...draft.site, role: event.target.value } })} /></Field><Field label="Email"><input className={fieldClass} value={draft.site.email} onChange={(event) => commit({ ...draft, site: { ...draft.site, email: event.target.value } })} /></Field></div><Field label="Titular"><textarea className={`${fieldClass} min-h-24`} value={draft.about.headline} onChange={(event) => commit({ ...draft, about: { ...draft.about, headline: event.target.value } })} /></Field><Field label="Resumen · un párrafo por línea"><textarea className={`${fieldClass} min-h-44`} value={draft.about.summary.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, summary: lines(event.target.value) } })} /></Field><Field label="Imagen de perfil · URL"><input className={fieldClass} value={draft.about.profileImage} onChange={(event) => commit({ ...draft, about: { ...draft.about, profileImage: event.target.value } })} /></Field><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiUploadCloud /> {uploading === "profile" ? "Subiendo..." : "Subir imagen"}<input className="hidden" type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", "profile"); if (url) commit({ ...draft, about: { ...draft.about, profileImage: url } }); }} /></label></div>
+                <div className="space-y-6"><div className="glass-panel border border-white/10 p-6"><Field label="Tech stack · uno por línea"><textarea className={`${fieldClass} min-h-64`} value={draft.about.skillset.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, skillset: lines(event.target.value) } })} /></Field></div><div className="glass-panel border border-white/10 p-6"><Field label="Tools · uno por línea"><textarea className={`${fieldClass} min-h-56`} value={draft.about.toolset.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, toolset: lines(event.target.value) } })} /></Field></div><div className="glass-panel border border-white/10 p-6"><Field label="Áreas de enfoque · una por línea"><textarea className={`${fieldClass} min-h-44`} value={draft.about.focusAreas.join("\n")} onChange={(event) => commit({ ...draft, about: { ...draft.about, focusAreas: lines(event.target.value) } })} /></Field></div></div>
+              </div>
+            </section>
+          )}
+
+          {section === "projects" && (
+            <section>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Portfolio" title="Proyectos" description="Añade, actualiza y elimina proyectos sin mezclar su edición con el resto del sitio." /><button type="button" onClick={addProject} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nuevo proyecto</button></div>
+              <div className="space-y-6">{draft.projects.map((project, index) => <details key={project.id} className="glass-panel border border-white/10 p-6" open={index === 0}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Galería · una URL por línea"><textarea className={`${fieldClass} min-h-28`} value={(project.gallery ?? []).join("\n")} onChange={(event) => updateProject(project.id, { gallery: lines(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
+            </section>
+          )}
+
+          {section === "certifications" && (
+            <section>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Skills & Certifications" title="Certificaciones verificables" description="Gestiona el slider de la landing. Cada tarjeta puede abrir el documento de referencia y enlazar a la validación oficial." /><button type="button" onClick={addCertification} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nueva certificación</button></div>
+              {draft.certifications.length === 0 ? <div className="glass-panel border border-dashed border-white/15 p-12 text-center"><FiAward className="mx-auto text-4xl text-[var(--color-accent-soft)]" /><h2 className="mt-4 font-display text-xl font-semibold">Aún no hay certificaciones</h2><p className="mt-2 text-sm text-slate-500">Añade la primera para activar el slider en la landing.</p></div> : <div className="space-y-6">{draft.certifications.map((certification, index) => <details key={certification.id} open={index === 0} className="glass-panel border border-white/10 p-6"><summary className="flex cursor-pointer list-none items-center gap-4"><div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white text-sm font-bold text-slate-800">{certification.logoUrl ? <img src={certification.logoUrl} alt="" className="h-full w-full object-contain p-1" /> : certification.issuer.slice(0, 2).toUpperCase() || <FiAward />}</div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{certification.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{certification.issuer || "Emisor pendiente"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={certification.title} onChange={(event) => updateCertification(certification.id, { title: event.target.value })} /></Field><Field label="Emisor"><input className={fieldClass} value={certification.issuer} onChange={(event) => updateCertification(certification.id, { issuer: event.target.value })} /></Field><Field label="Fecha de emisión"><input className={fieldClass} placeholder="Ej. Marzo 2026" value={certification.issuedAt ?? ""} onChange={(event) => updateCertification(certification.id, { issuedAt: event.target.value })} /></Field><Field label="ID de credencial"><input className={fieldClass} value={certification.credentialId ?? ""} onChange={(event) => updateCertification(certification.id, { credentialId: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={certification.description} onChange={(event) => updateCertification(certification.id, { description: event.target.value })} /></Field></div><Field label="URL de verificación"><input type="url" className={fieldClass} value={certification.verificationUrl} onChange={(event) => updateCertification(certification.id, { verificationUrl: event.target.value })} /></Field><Field label="PDF o imagen del certificado"><input className={fieldClass} value={certification.certificateUrl} onChange={(event) => updateCertification(certification.id, { certificateUrl: event.target.value })} /></Field><div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-950/35 p-5"><div className="grid items-end gap-4 lg:grid-cols-[1fr_auto]"><Field label="Empresa o escuela en LinkedIn"><input type="url" className={fieldClass} placeholder="https://www.linkedin.com/company/..." value={certification.organizationUrl} onChange={(event) => updateCertification(certification.id, { organizationUrl: event.target.value })} /></Field><button type="button" onClick={() => void resolveLinkedInLogo(certification)} disabled={resolvingLogo === certification.id} className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/10 disabled:opacity-50">{resolvingLogo === certification.id ? "Buscando..." : "Obtener logo"}</button></div><div className="mt-4 grid items-end gap-4 lg:grid-cols-[1fr_auto]"><Field label="URL del logo · también puedes ajustarla manualmente"><input className={fieldClass} value={certification.logoUrl ?? ""} onChange={(event) => updateCertification(certification.id, { logoUrl: event.target.value })} /></Field>{certification.logoUrl && <img src={certification.logoUrl} alt={`Logo ${certification.issuer}`} className="h-14 w-14 rounded-xl bg-white object-contain p-1" />}</div><p className="mt-3 text-xs leading-5 text-slate-500">LinkedIn puede limitar la lectura automática. Si ocurre, pega una URL pública del logo en el campo anterior.</p></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiFileText /> {uploading === certification.id ? "Subiendo..." : "Subir certificado"}<input type="file" accept="application/pdf,image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, file.type === "application/pdf" ? "document" : "image", certification.id); if (url) updateCertification(certification.id, { certificateUrl: url }); }} /></label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${certification.title}?`)) commit({ ...draft, certifications: draft.certifications.filter((item) => item.id !== certification.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>}
+            </section>
+          )}
+
+          {section === "settings" && (
+            <section>
+              <PageHeading eyebrow="Sistema" title="Configuración avanzada" description="Ajusta el tema, enlaces sociales, CV o edita el contenido completo en JSON." />
+              <div className="grid gap-6 xl:grid-cols-2"><div className="glass-panel border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Tema visual</h2><div className="mt-5 grid gap-3 sm:grid-cols-2">{Object.entries(draft.theme).map(([key, value]) => <label key={key} className="flex items-center gap-3 rounded-2xl border border-white/10 p-3"><input type="color" value={value} onChange={(event) => commit({ ...draft, theme: { ...draft.theme, [key]: event.target.value } })} className="h-10 w-10 rounded-lg bg-transparent" /><span className="text-sm capitalize text-slate-300">{key}</span><span className="ml-auto text-xs text-slate-600">{value}</span></label>)}</div></div><div className="glass-panel space-y-5 border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Currículum</h2><Field label="Título"><input className={fieldClass} value={draft.resume.title} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, title: event.target.value } })} /></Field><Field label="Descripción"><textarea className={`${fieldClass} min-h-24`} value={draft.resume.description} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, description: event.target.value } })} /></Field><Field label="URL del PDF"><input className={fieldClass} value={draft.resume.downloadUrl} onChange={(event) => commit({ ...draft, resume: { ...draft.resume, downloadUrl: event.target.value }, home: { ...draft.home, secondaryCta: { ...draft.home.secondaryCta, href: event.target.value } } })} /></Field><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiUploadCloud /> {uploading === "resume" ? "Subiendo..." : "Subir PDF"}<input type="file" accept="application/pdf" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "document", "resume"); if (url) commit({ ...draft, resume: { ...draft.resume, downloadUrl: url }, home: { ...draft.home, secondaryCta: { ...draft.home.secondaryCta, href: url } } }); }} /></label></div></div>
+              <div className="mt-6 glass-panel border border-white/10 p-6"><h2 className="font-display text-xl font-semibold">Enlaces sociales</h2><div className="mt-5 space-y-3">{draft.socials.map((social, index) => <div key={`${social.label}-${index}`} className="grid grid-cols-[0.5fr_1fr_auto] gap-3"><input className={fieldClass} value={social.label} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) })} /><input className={fieldClass} value={social.href} onChange={(event) => commit({ ...draft, socials: draft.socials.map((item, itemIndex) => itemIndex === index ? { ...item, href: event.target.value } : item) })} /><button type="button" onClick={() => commit({ ...draft, socials: draft.socials.filter((_, itemIndex) => itemIndex !== index) })} className="px-3 text-rose-300"><FiTrash2 /></button></div>)}</div><button type="button" onClick={() => commit({ ...draft, socials: [...draft.socials, { label: "Nuevo", href: "https://" }] })} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm"><FiPlus /> Añadir enlace</button></div>
+              <div className="mt-6 glass-panel border border-white/10 p-6"><div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-semibold">JSON completo</h2><p className="mt-2 text-sm text-slate-500">Para ajustes avanzados o copias de seguridad.</p></div><FiFileText className="text-[var(--color-accent-soft)]" /></div><textarea spellCheck={false} className={`${fieldClass} mt-5 min-h-[520px] font-mono text-xs leading-6`} value={jsonValue} onChange={(event) => { const value = event.target.value; setJsonValue(value); try { const parsed = JSON.parse(value) as SiteContent; if (!Array.isArray(parsed.certifications)) parsed.certifications = []; setDraft(parsed); setDirty(true); setJsonError(null); } catch { setJsonError("El JSON no es válido. Corrígelo antes de guardar."); } }} />{jsonError && <p className="mt-3 text-sm text-rose-300">{jsonError}</p>}</div>
+            </section>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
