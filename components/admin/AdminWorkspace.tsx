@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiAward,
+  FiArrowDown,
+  FiArrowUp,
   FiBookOpen,
   FiBriefcase,
   FiCheck,
@@ -15,6 +17,7 @@ import {
   FiHome,
   FiImage,
   FiLogOut,
+  FiMove,
   FiPlus,
   FiSave,
   FiSettings,
@@ -87,6 +90,14 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
   const [message, setMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [resolvingLogo, setResolvingLogo] = useState<string | null>(null);
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
+  const [openProjectIds, setOpenProjectIds] = useState<Set<string>>(
+    () => new Set(initialContent.projects[0] ? [initialContent.projects[0].id] : [])
+  );
+  const projectRenderKeys = useRef(
+    new Map(initialContent.projects.map((project, index) => [project.id, `project-editor-${index}`]))
+  );
   const [jsonValue, setJsonValue] = useState(JSON.stringify(initialContent, null, 2));
   const [jsonError, setJsonError] = useState<string | null>(null);
 
@@ -175,7 +186,64 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
   }
 
   function updateProject(id: string, patch: Partial<Project>) {
+    if (patch.id !== undefined && patch.id !== id) {
+      const renderKey = projectRenderKeys.current.get(id) ?? `project-editor-${id}`;
+      projectRenderKeys.current.delete(id);
+      projectRenderKeys.current.set(patch.id, renderKey);
+      setOpenProjectIds((current) => {
+        if (!current.has(id)) return current;
+        const next = new Set(current);
+        next.delete(id);
+        next.add(patch.id as string);
+        return next;
+      });
+    }
     commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
+  }
+
+  function setProjectAccordionOpen(projectId: string, open: boolean) {
+    setOpenProjectIds((current) => {
+      if (current.has(projectId) === open) return current;
+      const next = new Set(current);
+      if (open) next.add(projectId);
+      else next.delete(projectId);
+      return next;
+    });
+  }
+
+  function getProjectRenderKey(projectId: string) {
+    return projectRenderKeys.current.get(projectId) ?? projectId;
+  }
+
+  function reorderProjects(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return;
+
+    const projects = [...draft.projects];
+    const sourceIndex = projects.findIndex((project) => project.id === sourceId);
+    const targetIndex = projects.findIndex((project) => project.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [project] = projects.splice(sourceIndex, 1);
+    projects.splice(targetIndex, 0, project);
+    commit({ ...draft, projects });
+    setMessage("Orden actualizado. Se guardará automáticamente.");
+  }
+
+  function moveProject(projectId: string, offset: -1 | 1) {
+    const sourceIndex = draft.projects.findIndex((project) => project.id === projectId);
+    const target = draft.projects[sourceIndex + offset];
+    if (sourceIndex < 0 || !target) return;
+    reorderProjects(projectId, target.id);
+  }
+
+  function projectDropTargetAt(clientX: number, clientY: number) {
+    const element = document.elementFromPoint(clientX, clientY);
+    return element?.closest<HTMLElement>("[data-project-drop-id]")?.dataset.projectDropId ?? null;
+  }
+
+  function resetProjectDrag() {
+    setDraggedProjectId(null);
+    setDragOverProjectId(null);
   }
 
   function updateContact(field: "location" | "phone" | "email" | "portfolioUrl", value: string) {
@@ -421,8 +489,80 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
 
           {section === "projects" && (
             <section>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Portfolio" title="Proyectos" description="Añade, actualiza y elimina proyectos sin mezclar su edición con el resto del sitio." /><button type="button" onClick={addProject} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nuevo proyecto</button></div>
-              <div className="space-y-6">{draft.projects.map((project, index) => <details key={project.id} className="glass-panel border border-white/10 p-6" open={index === 0}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Galería · una URL por línea"><textarea className={`${fieldClass} min-h-28`} value={(project.gallery ?? []).join("\n")} onChange={(event) => updateProject(project.id, { gallery: lines(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Portfolio" title="Proyectos" description="Añade, actualiza, elimina y ordena los proyectos según deban aparecer en el portfolio." /><button type="button" onClick={addProject} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nuevo proyecto</button></div>
+
+              {draft.projects.length > 1 && (
+                <div className="mb-8 space-y-3">
+                  <p className="flex items-center gap-2 text-xs text-slate-500"><FiMove /> Arrastra los proyectos para cambiar su orden de aparición. Las flechas funcionan como alternativa táctil y accesible.</p>
+                  {draft.projects.map((project, index) => (
+                    <div
+                      key={`project-order-${project.id}`}
+                      data-project-drop-id={project.id}
+                      onDragOver={(event) => {
+                        if (!draggedProjectId) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        setDragOverProjectId(project.id);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const sourceId = draggedProjectId ?? event.dataTransfer.getData("text/plain");
+                        if (sourceId) reorderProjects(sourceId, project.id);
+                        resetProjectDrag();
+                      }}
+                      className={`glass-panel flex items-center gap-3 border p-3 transition sm:gap-4 ${
+                        dragOverProjectId === project.id && draggedProjectId !== project.id
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 shadow-glow"
+                          : "border-white/10"
+                      } ${draggedProjectId === project.id ? "opacity-60" : "opacity-100"}`}
+                    >
+                      <span
+                        draggable
+                        role="button"
+                        tabIndex={0}
+                        title="Arrastrar para cambiar el orden"
+                        aria-label={`Mover ${project.title}`}
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", project.id);
+                          setDraggedProjectId(project.id);
+                          setDragOverProjectId(project.id);
+                        }}
+                        onDragEnd={resetProjectDrag}
+                        onPointerDown={(event) => {
+                          if (event.pointerType === "mouse") return;
+                          event.preventDefault();
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                          setDraggedProjectId(project.id);
+                          setDragOverProjectId(project.id);
+                        }}
+                        onPointerMove={(event) => {
+                          if (event.pointerType === "mouse") return;
+                          const targetId = projectDropTargetAt(event.clientX, event.clientY);
+                          if (targetId) setDragOverProjectId(targetId);
+                        }}
+                        onPointerUp={(event) => {
+                          if (event.pointerType === "mouse") return;
+                          const targetId = projectDropTargetAt(event.clientX, event.clientY);
+                          if (targetId) reorderProjects(project.id, targetId);
+                          resetProjectDrag();
+                        }}
+                        onPointerCancel={resetProjectDrag}
+                        className="inline-flex h-11 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl border border-dashed border-white/15 text-slate-500 transition hover:border-white/30 hover:bg-white/5 hover:text-white active:cursor-grabbing"
+                      ><FiMove /></span>
+                      <span className="w-5 text-center text-xs font-bold text-slate-600">{index + 1}</span>
+                      <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div>
+                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{project.title}</p><p className="mt-1 truncate text-xs text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div>
+                      <div className="flex shrink-0 gap-1">
+                        <button type="button" disabled={index === 0} onClick={() => moveProject(project.id, -1)} aria-label={`Subir ${project.title}`} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><FiArrowUp /></button>
+                        <button type="button" disabled={index === draft.projects.length - 1} onClick={() => moveProject(project.id, 1)} aria-label={`Bajar ${project.title}`} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><FiArrowDown /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-6">{draft.projects.map((project) => <details key={getProjectRenderKey(project.id)} className="glass-panel border border-white/10 p-6" open={openProjectIds.has(project.id)} onToggle={(event) => setProjectAccordionOpen(project.id, event.currentTarget.open)}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Galería · una URL por línea"><textarea className={`${fieldClass} min-h-28`} value={(project.gallery ?? []).join("\n")} onChange={(event) => updateProject(project.id, { gallery: lines(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
             </section>
           )}
 

@@ -87,6 +87,45 @@ body {
   }
 }
 
+@keyframes journey-card-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes journey-card-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.journey-card-enter-left {
+  animation: journey-card-enter-left 280ms ease-out both;
+}
+
+.journey-card-enter-right {
+  animation: journey-card-enter-right 280ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-card-enter-left,
+  .journey-card-enter-right {
+    animation: none;
+  }
+}
+
 .react-pdf__Page {
   width: 100% !important;
 }

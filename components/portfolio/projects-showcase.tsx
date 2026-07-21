@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -30,6 +30,10 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [projectPage, setProjectPage] = useState(0);
+  const [projectsPerPage, setProjectsPerPage] = useState(3);
+  const [projectPageDirection, setProjectPageDirection] = useState<"left" | "right">("right");
+  const projectTouchStartX = useRef<number | null>(null);
 
   const projectParam = searchParams.get("project");
 
@@ -42,6 +46,34 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
     () => (selectedProject ? getProjectSlides(selectedProject) : []),
     [selectedProject]
   );
+
+  const projectPageCount = Math.max(1, Math.ceil(projects.length / projectsPerPage));
+  const visibleProjects = useMemo(
+    () => projects.slice(projectPage * projectsPerPage, (projectPage + 1) * projectsPerPage),
+    [projectPage, projects, projectsPerPage]
+  );
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1280px)");
+    const tabletQuery = window.matchMedia("(min-width: 768px)");
+
+    function updateProjectsPerPage() {
+      setProjectsPerPage(desktopQuery.matches ? 3 : tabletQuery.matches ? 2 : 1);
+    }
+
+    updateProjectsPerPage();
+    desktopQuery.addEventListener("change", updateProjectsPerPage);
+    tabletQuery.addEventListener("change", updateProjectsPerPage);
+
+    return () => {
+      desktopQuery.removeEventListener("change", updateProjectsPerPage);
+      tabletQuery.removeEventListener("change", updateProjectsPerPage);
+    };
+  }, []);
+
+  useEffect(() => {
+    setProjectPage((currentPage) => Math.min(currentPage, projectPageCount - 1));
+  }, [projectPageCount]);
 
   useEffect(() => {
     if (!projectParam) {
@@ -164,6 +196,18 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
     );
   }
 
+  function moveProjectPage(offset: -1 | 1) {
+    if (projectPageCount <= 1) return;
+    setProjectPageDirection(offset < 0 ? "left" : "right");
+    setProjectPage((currentPage) => (currentPage + offset + projectPageCount) % projectPageCount);
+  }
+
+  function selectProjectPage(nextPage: number) {
+    if (nextPage === projectPage) return;
+    setProjectPageDirection(nextPage < projectPage ? "left" : "right");
+    setProjectPage(nextPage);
+  }
+
   return (
     <>
       {shareFeedback && (
@@ -172,8 +216,62 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {projects.map((project, index) => (
+      {projectPageCount > 1 && (
+        <div className="mb-5 flex items-center justify-end gap-3">
+          <span className="min-w-16 text-center text-xs font-bold tabular-nums tracking-[0.18em] text-[var(--color-muted)]">
+            {String(projectPage + 1).padStart(2, "0")} / {String(projectPageCount).padStart(2, "0")}
+          </span>
+          <button
+            type="button"
+            onClick={() => moveProjectPage(-1)}
+            aria-label={copy.previousProjects}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+          >
+            <FiChevronLeft />
+          </button>
+          <button
+            type="button"
+            onClick={() => moveProjectPage(1)}
+            aria-label={copy.nextProjects}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+          >
+            <FiChevronRight />
+          </button>
+        </div>
+      )}
+
+      <div
+        className="outline-none focus-visible:rounded-[28px] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+        tabIndex={projectPageCount > 1 ? 0 : -1}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            moveProjectPage(-1);
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            moveProjectPage(1);
+          }
+        }}
+        onTouchStart={(event) => {
+          projectTouchStartX.current = event.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          if (projectTouchStartX.current === null) return;
+          const distance = (event.changedTouches[0]?.clientX ?? projectTouchStartX.current) - projectTouchStartX.current;
+          projectTouchStartX.current = null;
+          if (Math.abs(distance) < 45) return;
+          moveProjectPage(distance > 0 ? -1 : 1);
+        }}
+        aria-roledescription="carousel"
+        aria-label={copy.projects}
+      >
+      <div
+        key={`${projectPage}-${projectsPerPage}`}
+        className={`grid gap-6 md:grid-cols-2 xl:grid-cols-3 journey-card-enter-${projectPageDirection}`}
+        aria-live="polite"
+      >
+        {visibleProjects.map((project, index) => (
           <article
             key={project.id}
             className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)] shadow-glow transition duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface)]/90"
@@ -183,7 +281,7 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
                   src={project.image}
                   alt={project.title}
                   fill
-                  priority={index < 2}
+                  priority={projectPage === 0 && index < 2}
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                   className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                 />
@@ -278,6 +376,26 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
             </article>
         ))}
       </div>
+      </div>
+
+      {projectPageCount > 1 && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {Array.from({ length: projectPageCount }, (_, pageIndex) => (
+            <button
+              key={pageIndex}
+              type="button"
+              onClick={() => selectProjectPage(pageIndex)}
+              aria-label={`${copy.showProjectPage} ${pageIndex + 1}`}
+              aria-current={pageIndex === projectPage ? "true" : undefined}
+              className={`h-2 rounded-full transition-all ${
+                pageIndex === projectPage
+                  ? "w-9 bg-[var(--color-accent)]"
+                  : "w-3 bg-[var(--color-border-strong)] hover:bg-[var(--color-accent-soft)]"
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       {selectedProject && (
           <div
