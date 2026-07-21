@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 
 if (typeof window !== "undefined") {
   pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -12,9 +13,11 @@ if (typeof window !== "undefined") {
 type ResumePdfPreviewProps = {
   fileUrl: string;
   title: string;
+  language: SiteLanguage;
 };
 
-export function ResumePdfPreview({ fileUrl, title }: ResumePdfPreviewProps) {
+export function ResumePdfPreview({ fileUrl, title, language }: ResumePdfPreviewProps) {
+  const copy = interfaceCopy[language];
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(720);
   const [pageCount, setPageCount] = useState(0);
@@ -58,7 +61,7 @@ export function ResumePdfPreview({ fileUrl, title }: ResumePdfPreviewProps) {
         }
         error={
           <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5 text-sm leading-7 text-amber-100">
-            No se pudo renderizar el PDF aquí. Puedes abrirlo o descargarlo desde los botones.
+            {copy.resumeRenderError}
           </div>
         }
         onLoadSuccess={({ numPages }) => {

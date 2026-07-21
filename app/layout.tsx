@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Inter, Space_Grotesk } from "next/font/google";
 
 import "./globals.css";
+import { LANGUAGE_COOKIE_NAME, parseLanguage } from "@/lib/i18n";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,8 +31,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const language = parseLanguage(cookies().get(LANGUAGE_COOKIE_NAME)?.value);
+
   return (
-    <html lang="es">
+    <html lang={language}>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} bg-slate-950 text-slate-100 antialiased`}
       >

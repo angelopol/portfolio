@@ -15,6 +15,7 @@ import {
 import { FloatingNav } from "@/components/portfolio/floating-nav";
 import { CertificationsShowcase } from "@/components/portfolio/certifications-showcase";
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
+import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 import type { SiteContent } from "@/types/site";
 
 const ResumePdfPreview = dynamic(
@@ -22,9 +23,7 @@ const ResumePdfPreview = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-8 text-sm text-[var(--color-muted)]">
-        Loading resume preview...
-      </div>
+      <div className="h-[420px] animate-pulse rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)]" />
     ),
   }
 );
@@ -39,7 +38,8 @@ function getSocialIcon(label: string): IconType {
   return socialIcons[label.toLowerCase()] ?? FiExternalLink;
 }
 
-export function SiteShell({ content }: { content: SiteContent }) {
+export function SiteShell({ content, language }: { content: SiteContent; language: SiteLanguage }) {
+  const copy = interfaceCopy[language];
   const themeStyle = {
     "--color-background": content.theme.background,
     "--color-surface": content.theme.surface,
@@ -77,7 +77,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
         ))}
       </div>
 
-      <FloatingNav initials={content.site.initials} resumeUrl={content.resume.downloadUrl} />
+      <FloatingNav initials={content.site.initials} resumeUrl={content.resume.downloadUrl} language={language} />
 
       <main>
         <section id="home" className="section-shell grid gap-10 pt-28 pb-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-32 lg:pb-16">
@@ -180,7 +180,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
         <section id="about" className="section-shell py-8 lg:py-16">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="glass-panel p-8 shadow-glow">
-              <span className="section-label">About</span>
+              <span className="section-label">{copy.about}</span>
               <h2 className="section-title max-w-3xl">{content.about.headline}</h2>
 
               <div className="mt-6 space-y-5 text-base leading-8 text-[var(--color-muted)]">
@@ -192,7 +192,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
 
             <div className="space-y-8">
               <div className="glass-panel p-8">
-                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Focus areas</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.focusAreas}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.focusAreas.map((item) => (
                     <span
@@ -206,7 +206,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div className="glass-panel p-8">
-                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tech stack</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.techStack}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.skillset.map((item) => (
                     <span
@@ -220,7 +220,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               </div>
 
               <div className="glass-panel p-8">
-                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">Tools</h3>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.tools}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {content.about.toolset.map((item) => (
                     <span
@@ -233,7 +233,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
                 </div>
               </div>
 
-              <CertificationsShowcase certifications={content.certifications} />
+              <CertificationsShowcase certifications={content.certifications} language={language} />
             </div>
           </div>
         </section>
@@ -241,18 +241,18 @@ export function SiteShell({ content }: { content: SiteContent }) {
         <section id="projects" className="section-shell py-8 lg:py-16">
           <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <span className="section-label">Projects</span>
-              <h2 className="section-title">Real products, useful systems, and end-to-end execution.</h2>
+              <span className="section-label">{copy.projects}</span>
+              <h2 className="section-title">{copy.projectsTitle}</h2>
             </div>
           </div>
 
-          <ProjectsShowcase projects={content.projects} />
+          <ProjectsShowcase projects={content.projects} language={language} />
         </section>
 
         <section id="resume" className="section-shell py-8 lg:py-16">
           <div className="grid items-start gap-8 xl:grid-cols-[0.8fr_1.2fr]">
             <div className="glass-panel p-8 shadow-glow">
-              <span className="section-label">Resume</span>
+              <span className="section-label">{copy.resume}</span>
               <h2 className="section-title">{content.resume.title}</h2>
               <p className="mt-6 text-base leading-8 text-[var(--color-muted)]">{content.resume.description}</p>
 
@@ -286,6 +286,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
               <ResumePdfPreview
                 fileUrl={content.resume.downloadUrl}
                 title={content.resume.title}
+                language={language}
               />
             </div>
           </div>
@@ -313,7 +314,7 @@ export function SiteShell({ content }: { content: SiteContent }) {
             ))}
           </div>
 
-          <p>© {currentYear} · Built with Next.js, TypeScript and Tailwind CSS.</p>
+          <p>© {currentYear} · {copy.builtWith}</p>
         </div>
       </footer>
     </div>

@@ -115,4 +115,7 @@ export type SiteContent = {
   projects: Project[];
   socials: SocialLink[];
   resume: ResumeContent;
+  translations: {
+    es: Record<string, string>;
+  };
 };

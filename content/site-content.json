@@ -174,5 +174,8 @@
     "downloadUrl": "/assets/CV - Angelo Polgrossi - English.pdf",
     "openLabel": "Open resume",
     "downloadLabel": "Download resume"
+  },
+  "translations": {
+    "es": {}
   }
 }

@@ -1,28 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiDownload } from "react-icons/fi";
-
-const sectionLinks = [
-  { href: "#home", label: "Home" },
-  { href: "#about", label: "About" },
-  { href: "#projects", label: "Projects" },
-  { href: "#resume", label: "Resume" },
-];
+import { LANGUAGE_COOKIE_NAME, type SiteLanguage } from "@/lib/i18n";
 
 export function FloatingNav({
   initials,
   resumeUrl,
+  language,
 }: {
   initials: string;
   resumeUrl: string;
+  language: SiteLanguage;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
   const hidden = Boolean(searchParams.get("project"));
   const navIsActive = isVisible && !hidden;
+  const sectionLinks = [
+    { href: "#home", label: "Home" },
+    { href: "#about", label: language === "es" ? "Sobre mí" : "About" },
+    { href: "#projects", label: language === "es" ? "Proyectos" : "Projects" },
+    { href: "#resume", label: language === "es" ? "Currículum" : "Resume" },
+  ];
+
+  function changeLanguage(nextLanguage: SiteLanguage) {
+    document.cookie = `${LANGUAGE_COOKIE_NAME}=${nextLanguage}; path=/; max-age=31536000; SameSite=Lax`;
+    router.refresh();
+  }
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -75,6 +83,28 @@ export function FloatingNav({
             ))}
           </nav>
 
+          <div className="flex shrink-0 items-center gap-2">
+            <div
+              className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] p-1"
+              aria-label={language === "es" ? "Idioma" : "Language"}
+            >
+              {(["en", "es"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => changeLanguage(option)}
+                  aria-pressed={language === option}
+                  className={`rounded-full px-2.5 py-1.5 text-xs font-bold uppercase transition ${
+                    language === option
+                      ? "bg-[var(--color-accent)] text-white"
+                      : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+
           <a
             href={resumeUrl}
             target="_blank"
@@ -84,6 +114,7 @@ export function FloatingNav({
             <FiDownload />
             CV
           </a>
+          </div>
         </div>
       </div>
     </div>

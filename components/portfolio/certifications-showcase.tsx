@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { FiArrowLeft, FiArrowRight, FiAward, FiExternalLink, FiX } from "react-icons/fi";
 
+import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 import type { Certification } from "@/types/site";
 
 function IssuerLogo({ certification, large = false }: { certification: Certification; large?: boolean }) {
@@ -32,7 +33,8 @@ function IssuerLogo({ certification, large = false }: { certification: Certifica
   );
 }
 
-export function CertificationsShowcase({ certifications }: { certifications: Certification[] }) {
+export function CertificationsShowcase({ certifications, language }: { certifications: Certification[]; language: SiteLanguage }) {
+  const copy = interfaceCopy[language];
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<Certification | null>(null);
 
@@ -64,10 +66,10 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
-              Skills &amp; Certifications
+              {copy.skillsCertifications}
             </p>
             <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-text)]">
-              Certifications
+              {copy.certifications}
             </h3>
           </div>
 
@@ -76,7 +78,7 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
               <button
                 type="button"
                 onClick={() => setIndex((currentIndex) => (currentIndex - 1 + certifications.length) % certifications.length)}
-                aria-label="Certificación anterior"
+                aria-label={copy.previousCertification}
                 className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] p-2 text-[var(--color-text)] transition hover:bg-[var(--color-ghost-strong)]"
               >
                 <FiArrowLeft />
@@ -84,7 +86,7 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
               <button
                 type="button"
                 onClick={() => setIndex((currentIndex) => (currentIndex + 1) % certifications.length)}
-                aria-label="Certificación siguiente"
+                aria-label={copy.nextCertification}
                 className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] p-2 text-[var(--color-text)] transition hover:bg-[var(--color-ghost-strong)]"
               >
                 <FiArrowRight />
@@ -110,7 +112,7 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
           </button>
         ) : (
           <div className="mt-5 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-5 text-sm leading-6 text-[var(--color-muted)]">
-            Las certificaciones verificables aparecerán aquí.
+            {copy.emptyCertifications}
           </div>
         )}
 
@@ -121,7 +123,7 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
                 key={item.id}
                 type="button"
                 onClick={() => setIndex(dotIndex)}
-                aria-label={`Mostrar ${item.title}`}
+                aria-label={`${copy.show} ${item.title}`}
                 className={`h-1.5 rounded-full transition-all ${dotIndex === index ? "w-8 bg-[var(--color-accent)]" : "w-3 bg-[var(--color-border-strong)]"}`}
               />
             ))}
@@ -151,7 +153,7 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                aria-label="Cerrar"
+                aria-label={copy.close}
                 className="rounded-full border border-[var(--color-border)] p-3 text-[var(--color-text)] transition hover:bg-[var(--color-ghost)]"
               >
                 <FiX />
@@ -160,18 +162,18 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
 
             <div className="grid gap-6 p-6 lg:grid-cols-[0.68fr_1.32fr]">
               <div>
-                {selected.issuedAt && <p className="text-sm text-[var(--color-muted)]">Emitido: {selected.issuedAt}</p>}
-                {selected.credentialId && <p className="mt-2 break-all text-sm text-[var(--color-muted)]">ID: {selected.credentialId}</p>}
+                {selected.issuedAt && <p className="text-sm text-[var(--color-muted)]">{copy.issued}: {selected.issuedAt}</p>}
+                {selected.credentialId && <p className="mt-2 break-all text-sm text-[var(--color-muted)]">{copy.credentialId}: {selected.credentialId}</p>}
                 <p className="mt-5 text-sm leading-7 text-[var(--color-muted)]">{selected.description}</p>
                 <div className="mt-6 flex flex-col gap-3">
                   {selected.verificationUrl && (
                     <a href={selected.verificationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
-                      <FiExternalLink /> Verificar credencial
+                      <FiExternalLink /> {copy.verifyCredential}
                     </a>
                   )}
                   {selected.organizationUrl && (
                     <a href={selected.organizationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-ghost)]">
-                      Organización en LinkedIn
+                      {copy.organizationLinkedIn}
                     </a>
                   )}
                 </div>
@@ -180,12 +182,12 @@ export function CertificationsShowcase({ certifications }: { certifications: Cer
               <div className="min-h-[420px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white/5">
                 {selected.certificateUrl ? (
                   /\.pdf(?:$|\?)/i.test(selected.certificateUrl) ? (
-                    <iframe src={selected.certificateUrl} title={`Certificado ${selected.title}`} className="h-[65vh] min-h-[420px] w-full bg-white" />
+                    <iframe src={selected.certificateUrl} title={`${copy.certificate} ${selected.title}`} className="h-[65vh] min-h-[420px] w-full bg-white" />
                   ) : (
-                    <img src={selected.certificateUrl} alt={`Certificado ${selected.title}`} className="h-full min-h-[420px] w-full object-contain" />
+                    <img src={selected.certificateUrl} alt={`${copy.certificate} ${selected.title}`} className="h-full min-h-[420px] w-full object-contain" />
                   )
                 ) : (
-                  <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[var(--color-muted)]">No se ha añadido un PDF o imagen de referencia.</div>
+                  <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[var(--color-muted)]">{copy.missingCertificate}</div>
                 )}
               </div>
             </div>

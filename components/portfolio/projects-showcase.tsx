@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 
 import type { Project } from "@/types/site";
+import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 
 function getProjectSlides(project: Project) {
   return [project.image, ...(project.gallery ?? [])].filter(
@@ -21,7 +22,8 @@ function getProjectSlides(project: Project) {
   );
 }
 
-export function ProjectsShowcase({ projects }: { projects: Project[] }) {
+export function ProjectsShowcase({ projects, language }: { projects: Project[]; language: SiteLanguage }) {
+  const copy = interfaceCopy[language];
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -131,13 +133,13 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
 
     try {
       await navigator.clipboard.writeText(url);
-      setShareFeedback("Link copied to clipboard.");
+      setShareFeedback(copy.linkCopied);
     } catch {
       try {
-        window.prompt("Copy this project link", url);
-        setShareFeedback("Copy the link from the dialog.");
+        window.prompt(copy.copyProjectLink, url);
+        setShareFeedback(copy.copyFromDialog);
       } catch {
-        setShareFeedback("Could not copy the project link.");
+        setShareFeedback(copy.copyFailed);
       }
     }
   }
@@ -190,8 +192,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   {project.featured && (
                     <span
                       className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
-                      aria-label="Featured project"
-                      title="Featured project"
+                      aria-label={copy.featuredProject}
+                      title={copy.featuredProject}
                     >
                       <FiStar className="h-4 w-4 fill-current" />
                     </span>
@@ -202,8 +204,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     type="button"
                     onClick={() => openProject(project.id)}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]"
-                    aria-label={`Open ${project.title} project modal`}
-                    title="Open project preview"
+                    aria-label={`${copy.openProject}: ${project.title}`}
+                    title={copy.openProject}
                   >
                     <FiExternalLink />
                   </button>
@@ -218,7 +220,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       type="button"
                       onClick={() => openProject(project.id)}
                       className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-background)]"
-                      aria-label={`Open ${project.title} project modal`}
+                      aria-label={`${copy.openProject}: ${project.title}`}
                     >
                       <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{project.title}</h3>
                     </button>
@@ -268,7 +270,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                     >
                       <FiShare2 />
-                      Share
+                      {copy.share}
                     </button>
                   </div>
                 </div>
@@ -295,17 +297,17 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                 type="button"
                 onClick={closeProject}
                   className="absolute right-3 top-3 z-[95] pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] sm:right-4 sm:top-4 sm:h-auto sm:w-auto sm:min-h-11 sm:min-w-11 sm:gap-2 sm:px-4"
-                  aria-label={`Close ${selectedProject.title} project dialog`}
-                  title="Close project"
+                  aria-label={`${copy.close}: ${selectedProject.title}`}
+                  title={copy.close}
               >
                 <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="hidden text-sm font-semibold sm:inline">Close</span>
+                  <span className="hidden text-sm font-semibold sm:inline">{copy.close}</span>
               </button>
 
                 <aside className="relative z-0 order-2 flex h-full min-h-0 flex-col overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
                 <div className="flex items-start gap-4">
                   <div className="min-w-0 flex-1">
-                  <p className="section-label">Project details</p>
+                  <p className="section-label">{copy.projectDetails}</p>
                     <h3
                       id={`project-modal-title-${selectedProject.id}`}
                       className="font-display text-3xl font-semibold text-[var(--color-text)]"
@@ -316,8 +318,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                   {selectedProject.featured && (
                       <span
                         className="mt-12 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent-soft)]"
-                        aria-label="Featured project"
-                        title="Featured project"
+                        aria-label={copy.featuredProject}
+                        title={copy.featuredProject}
                       >
                         <FiStar className="h-4.5 w-4.5 fill-current" />
                     </span>
@@ -333,7 +335,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
 
                 <div className="mt-8">
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-accent-soft)]">
-                    Stack used
+                    {copy.stackUsed}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     {selectedProject.stack.map((item) => (
@@ -354,7 +356,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                   >
                     <FiShare2 />
-                    Share project
+                    {copy.shareProject}
                   </button>
                   {selectedProject.demoUrl && (
                     <a
@@ -364,7 +366,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
                     >
                       <FiExternalLink />
-                      Live demo
+                      {copy.liveDemo}
                     </a>
                   )}
                   {selectedProject.githubUrl && (
@@ -375,7 +377,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                       className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
                     >
                       <FiGithub />
-                      Source code
+                      {copy.sourceCode}
                     </a>
                   )}
                 </div>
@@ -398,7 +400,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                         type="button"
                         onClick={showPreviousSlide}
                         className="absolute left-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)] sm:inline-flex"
-                        aria-label="Previous image"
+                        aria-label={copy.previousImage}
                       >
                         <FiChevronLeft className="h-5 w-5" />
                       </button>
@@ -406,7 +408,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                         type="button"
                         onClick={showNextSlide}
                         className="absolute right-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)] sm:inline-flex"
-                        aria-label="Next image"
+                        aria-label={copy.nextImage}
                       >
                         <FiChevronRight className="h-5 w-5" />
                       </button>
@@ -419,8 +421,8 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                     <div className="flex items-center justify-between gap-3 sm:block">
                       <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-muted)]">
                         {slides.length > 1
-                          ? `Image ${activeSlideIndex + 1} of ${slides.length}`
-                          : "Project preview"}
+                          ? `${copy.image} ${activeSlideIndex + 1} ${copy.of} ${slides.length}`
+                          : copy.projectPreview}
                       </p>
                       {slides.length > 1 && (
                         <div className="flex items-center gap-2 sm:hidden">
@@ -428,7 +430,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                             type="button"
                             onClick={showPreviousSlide}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-soft)]"
-                            aria-label="Previous image"
+                            aria-label={copy.previousImage}
                           >
                             <FiChevronLeft className="h-4 w-4" />
                           </button>
@@ -436,7 +438,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                             type="button"
                             onClick={showNextSlide}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-soft)]"
-                            aria-label="Next image"
+                            aria-label={copy.nextImage}
                           >
                             <FiChevronRight className="h-4 w-4" />
                           </button>
@@ -455,7 +457,7 @@ export function ProjectsShowcase({ projects }: { projects: Project[] }) {
                                 ? "border-[var(--color-accent)]"
                                 : "border-[var(--color-border)] opacity-70 hover:border-[var(--color-border-strong)] hover:opacity-100"
                             }`}
-                            aria-label={`Open image ${index + 1}`}
+                            aria-label={`${copy.openImage} ${index + 1}`}
                           >
                             <Image
                               src={image}

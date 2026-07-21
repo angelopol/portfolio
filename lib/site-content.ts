@@ -15,6 +15,9 @@ function normalizeSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
     certifications: Array.isArray(content.certifications) ? content.certifications : [],
+    translations: {
+      es: content.translations?.es ?? {},
+    },
   };
 }
 
