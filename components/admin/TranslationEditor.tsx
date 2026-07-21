@@ -14,6 +14,22 @@ type TranslationFieldDefinition = {
   multiline?: boolean;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getArrayIndex(collection: unknown[], segment: string) {
+  const idIndex = collection.findIndex(
+    (item) => isRecord(item) && item.id === segment
+  );
+  if (idIndex >= 0) return idIndex;
+
+  const numericIndex = Number(segment);
+  return Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < collection.length
+    ? numericIndex
+    : -1;
+}
+
 function createFields(content: SiteContent, section: TranslationSection): TranslationFieldDefinition[] {
   if (section === "home") {
     return [
@@ -122,6 +138,39 @@ export function TranslationEditor({
     });
   }
 
+  function updateEnglishSource(key: string, value: string) {
+    const nextContent = structuredClone(content) as SiteContent;
+    const segments = key.split(".");
+    let current: unknown = nextContent;
+    setError(null);
+
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index];
+      const last = index === segments.length - 1;
+
+      if (Array.isArray(current)) {
+        const itemIndex = getArrayIndex(current, segment);
+        if (itemIndex < 0) return;
+        if (last) {
+          current[itemIndex] = value;
+          onChange(nextContent);
+          return;
+        }
+        current = current[itemIndex];
+        continue;
+      }
+
+      if (!isRecord(current)) return;
+      if (last) {
+        current[segment] = value;
+        onChange(nextContent);
+        return;
+      }
+      if (!(segment in current)) return;
+      current = current[segment];
+    }
+  }
+
   async function suggestTranslation(field: TranslationFieldDefinition) {
     if (!field.source.trim()) return;
     setTranslatingKey(field.key);
@@ -151,7 +200,7 @@ export function TranslationEditor({
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Traducción · Español</p>
           <h2 className="mt-2 font-display text-2xl font-semibold text-white">Versión en español</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            El inglés es el contenido principal. Completa cada traducción manualmente o solicita una sugerencia individual con Gemini.
+            Edita directamente el contenido principal en inglés y completa la versión en español manualmente o con una sugerencia de Gemini.
           </p>
         </div>
       </div>
@@ -168,10 +217,15 @@ export function TranslationEditor({
 
             return (
               <div key={field.key} className="grid gap-4 rounded-2xl border border-white/10 bg-slate-950/30 p-4 xl:grid-cols-2">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">English · {field.label}</p>
-                  <div className="min-h-[48px] whitespace-pre-wrap rounded-xl border border-white/5 bg-white/[0.025] px-4 py-3 text-sm leading-6 text-slate-300">{field.source || "—"}</div>
-                </div>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">English · {field.label}</span>
+                  <Input
+                    value={field.source}
+                    onChange={(event) => updateEnglishSource(field.key, event.target.value)}
+                    rows={field.multiline ? 4 : undefined}
+                    className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-white outline-none transition focus:border-cyan-400/50"
+                  />
+                </label>
                 <label className="block">
                   <span className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
                     <span>Español · {field.label}</span>
