@@ -1633,8 +1633,12 @@ export function AdminWorkspace({
                       <div
                         key={`project-order-${project.id}`}
                         data-project-drop-id={project.id}
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          setDragOverProjectId(project.id);
+                        }}
                         onDragOver={(event) => {
-                          if (!draggedProjectId) return;
                           event.preventDefault();
                           event.dataTransfer.dropEffect = "move";
                           setDragOverProjectId(project.id);
@@ -2191,8 +2195,12 @@ export function AdminWorkspace({
                       <div
                         key={`certification-order-${certification.id}`}
                         data-certification-drop-id={certification.id}
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          setDragOverCertificationId(certification.id);
+                        }}
                         onDragOver={(event) => {
-                          if (!draggedCertificationId) return;
                           event.preventDefault();
                           event.dataTransfer.dropEffect = "move";
                           setDragOverCertificationId(certification.id);
