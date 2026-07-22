@@ -111,7 +111,6 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
     ],
     [draft]
   );
-
   function commit(next: SiteContent) {
     setDraft(next);
     setJsonValue(JSON.stringify(next, null, 2));
@@ -186,19 +185,27 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
   }
 
   function updateProject(id: string, patch: Partial<Project>) {
-    if (patch.id !== undefined && patch.id !== id) {
+    let nextPatch = patch;
+    if (patch.stack && typeof document !== "undefined" && document.activeElement instanceof HTMLInputElement) {
+      nextPatch = {
+        ...patch,
+        stack: document.activeElement.value.split(",").map((item) => item.trim()),
+      };
+    }
+
+    if (nextPatch.id !== undefined && nextPatch.id !== id) {
       const renderKey = projectRenderKeys.current.get(id) ?? `project-editor-${id}`;
       projectRenderKeys.current.delete(id);
-      projectRenderKeys.current.set(patch.id, renderKey);
+      projectRenderKeys.current.set(nextPatch.id, renderKey);
       setOpenProjectIds((current) => {
         if (!current.has(id)) return current;
         const next = new Set(current);
         next.delete(id);
-        next.add(patch.id as string);
+        next.add(nextPatch.id as string);
         return next;
       });
     }
-    commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
+    commit({ ...draft, projects: draft.projects.map((project) => (project.id === id ? { ...project, ...nextPatch } : project)) });
   }
 
   function setProjectAccordionOpen(projectId: string, open: boolean) {
@@ -213,6 +220,34 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
 
   function getProjectRenderKey(projectId: string) {
     return projectRenderKeys.current.get(projectId) ?? projectId;
+  }
+
+  async function uploadProjectGallery(projectId: string, files: FileList) {
+    const uploadedUrls: string[] = [];
+    for (const file of Array.from(files)) {
+      const url = await uploadAsset(file, "image", `gallery-${projectId}`);
+      if (url) uploadedUrls.push(url);
+    }
+    if (uploadedUrls.length === 0) return;
+
+    const project = draft.projects.find((item) => item.id === projectId);
+    if (!project) return;
+    updateProject(projectId, { gallery: [...(project.gallery ?? []), ...uploadedUrls] });
+  }
+
+  function removeProjectGalleryImage(projectId: string, imageIndex: number) {
+    const project = draft.projects.find((item) => item.id === projectId);
+    if (!project) return;
+    updateProject(projectId, { gallery: (project.gallery ?? []).filter((_, index) => index !== imageIndex) });
+  }
+
+  function moveProjectGalleryImage(projectId: string, imageIndex: number, offset: -1 | 1) {
+    const project = draft.projects.find((item) => item.id === projectId);
+    const gallery = [...(project?.gallery ?? [])];
+    const targetIndex = imageIndex + offset;
+    if (!project || targetIndex < 0 || targetIndex >= gallery.length) return;
+    [gallery[imageIndex], gallery[targetIndex]] = [gallery[targetIndex], gallery[imageIndex]];
+    updateProject(projectId, { gallery });
   }
 
   function reorderProjects(sourceId: string, targetId: string) {
@@ -562,7 +597,7 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
                 </div>
               )}
 
-              <div className="space-y-6">{draft.projects.map((project) => <details key={getProjectRenderKey(project.id)} className="glass-panel border border-white/10 p-6" open={openProjectIds.has(project.id)} onToggle={(event) => setProjectAccordionOpen(project.id, event.currentTarget.open)}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Galería · una URL por línea"><textarea className={`${fieldClass} min-h-28`} value={(project.gallery ?? []).join("\n")} onChange={(event) => updateProject(project.id, { gallery: lines(event.target.value) })} /></Field></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
+              <div className="space-y-6">{draft.projects.map((project) => <details key={getProjectRenderKey(project.id)} className="glass-panel border border-white/10 p-6" open={openProjectIds.has(project.id)} onToggle={(event) => setProjectAccordionOpen(project.id, event.currentTarget.open)}><summary className="flex cursor-pointer list-none items-center gap-4"><div className="h-16 w-24 overflow-hidden rounded-xl border border-white/10 bg-white/5"><img src={project.image} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{project.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{project.stack.join(" · ") || "Sin tecnologías"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={project.title} onChange={(event) => updateProject(project.id, { title: event.target.value, id: project.id.startsWith("project-") ? slugify(event.target.value) || project.id : project.id })} /></Field><Field label="ID"><input className={fieldClass} value={project.id} onChange={(event) => updateProject(project.id, { id: slugify(event.target.value) })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={project.description} onChange={(event) => updateProject(project.id, { description: event.target.value })} /></Field></div><Field label="Stack · separado por comas"><input className={fieldClass} value={project.stack.join(", ")} onChange={(event) => updateProject(project.id, { stack: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></Field><Field label="Imagen principal · URL"><input className={fieldClass} value={project.image} onChange={(event) => updateProject(project.id, { image: event.target.value })} /></Field><Field label="Demo URL"><input className={fieldClass} value={project.demoUrl ?? ""} onChange={(event) => updateProject(project.id, { demoUrl: event.target.value })} /></Field><Field label="GitHub URL"><input className={fieldClass} value={project.githubUrl ?? ""} onChange={(event) => updateProject(project.id, { githubUrl: event.target.value })} /></Field><div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/25 p-4 lg:col-span-2"><div className="flex flex-wrap items-center justify-between gap-3"><div><span className={labelClass}>Galería del proyecto</span><p className="text-sm text-slate-500">Selecciona una o varias imágenes. Se subirán al almacenamiento configurado y podrás ordenar su aparición.</p></div><label className={`inline-flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold transition ${uploading === `gallery-${project.id}` ? "cursor-wait opacity-60" : "cursor-pointer hover:bg-white/5"}`}><FiUploadCloud /> {uploading === `gallery-${project.id}` ? "Subiendo..." : "Añadir imágenes"}<input type="file" accept="image/*" multiple disabled={uploading === `gallery-${project.id}`} className="hidden" onChange={async (event) => { const files = event.target.files; if (!files?.length) return; await uploadProjectGallery(project.id, files); event.target.value = ""; }} /></label></div>{(project.gallery ?? []).length > 0 ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{(project.gallery ?? []).map((imageUrl, imageIndex) => <div key={`${imageUrl}-${imageIndex}`} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60"><div className="aspect-video overflow-hidden bg-white/5"><img src={imageUrl} alt={`Imagen ${imageIndex + 1} de ${project.title}`} className="h-full w-full object-cover" /></div><div className="flex items-center justify-between gap-2 p-2"><span className="min-w-0 flex-1 truncate px-1 text-xs text-slate-500">{imageUrl}</span><div className="flex shrink-0 gap-1"><button type="button" onClick={() => moveProjectGalleryImage(project.id, imageIndex, -1)} disabled={imageIndex === 0} aria-label="Mover imagen a la izquierda" className="rounded-lg p-2 text-slate-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><FiArrowUp className="-rotate-90" /></button><button type="button" onClick={() => moveProjectGalleryImage(project.id, imageIndex, 1)} disabled={imageIndex === (project.gallery ?? []).length - 1} aria-label="Mover imagen a la derecha" className="rounded-lg p-2 text-slate-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><FiArrowDown className="-rotate-90" /></button><button type="button" onClick={() => removeProjectGalleryImage(project.id, imageIndex)} aria-label="Eliminar imagen de la galería" className="rounded-lg p-2 text-rose-300 hover:bg-rose-500/10"><FiTrash2 /></button></div></div></div>)}</div> : <div className="rounded-2xl border border-dashed border-white/15 px-5 py-8 text-center text-sm text-slate-500"><FiImage className="mx-auto mb-2 text-xl" />Aún no hay imágenes en la galería.</div>}</div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiImage /> {uploading === project.id ? "Subiendo..." : "Subir portada"}<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, "image", project.id); if (url) updateProject(project.id, { image: url }); }} /></label><label className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm"><input type="checkbox" checked={Boolean(project.featured)} onChange={(event) => updateProject(project.id, { featured: event.target.checked })} /> Destacado</label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${project.title}?`)) commit({ ...draft, projects: draft.projects.filter((item) => item.id !== project.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>
             </section>
           )}
 
