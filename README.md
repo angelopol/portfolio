@@ -263,6 +263,20 @@ Eso significa que:
 - el bucket o la política deben permitir lectura pública
 - la URL final del archivo debe ser accesible desde el navegador
 
+Los documentos grandes se cargan directamente desde el navegador mediante una URL firmada. Configura el CORS del bucket para aceptar el dominio de producción y el entorno local:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "HEAD", "PUT"],
+    "AllowedOrigins": ["https://tu-dominio.com", "http://localhost:3000"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
 Guía adicional:
 
 - [docs/remote-storage-setup.md](docs/remote-storage-setup.md)

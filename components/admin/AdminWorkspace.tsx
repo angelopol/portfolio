@@ -63,6 +63,15 @@ function lines(value: string) {
   return value.split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
+function normalizeLinkedInOrganizationUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    return `${url.hostname.toLowerCase().replace(/^www\./, "")}${url.pathname.toLowerCase().replace(/\/+$/, "")}`;
+  } catch {
+    return value.trim().toLowerCase().replace(/\/+$/, "");
+  }
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
@@ -172,6 +181,50 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
     setUploading(key);
     setMessage(null);
     try {
+      if (file.size > 4 * 1024 * 1024) {
+        const presignResponse = await fetch("/api/admin/media/direct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "presign",
+            fileName: file.name,
+            mimeType: file.type,
+            size: file.size,
+            kind,
+          }),
+        });
+        const presignData = (await presignResponse.json()) as {
+          uploadUrl?: string;
+          headers?: Record<string, string>;
+          item?: import("@/types/site").MediaItem;
+          error?: string;
+        };
+
+        if (presignResponse.ok && presignData.uploadUrl && presignData.item) {
+          const s3Response = await fetch(presignData.uploadUrl, {
+            method: "PUT",
+            headers: presignData.headers,
+            body: file,
+          });
+          if (!s3Response.ok) throw new Error("S3 rechazó la subida. Revisa la configuración CORS del bucket.");
+
+          const completionResponse = await fetch("/api/admin/media/direct", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "complete", item: presignData.item }),
+          });
+          const completionData = (await completionResponse.json()) as {
+            item?: import("@/types/site").MediaItem;
+            error?: string;
+          };
+          if (!completionResponse.ok || !completionData.item) {
+            throw new Error(completionData.error ?? "No se pudo registrar el archivo subido.");
+          }
+          return completionData.item.url;
+        }
+        throw new Error(presignData.error ?? "No se pudo preparar la subida directa.");
+      }
+
       const body = new FormData();
       body.append("file", file);
       body.append("kind", kind);
@@ -318,10 +371,19 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
   }
 
   function updateCertification(id: string, patch: Partial<Certification>) {
+    let nextPatch = patch;
+    if (patch.organizationUrl && patch.logoUrl === undefined) {
+      const organizationKey = normalizeLinkedInOrganizationUrl(patch.organizationUrl);
+      const reusableLogo = draft.certifications.find(
+        (item) => item.id !== id && item.logoUrl && normalizeLinkedInOrganizationUrl(item.organizationUrl) === organizationKey
+      )?.logoUrl;
+      if (reusableLogo) nextPatch = { ...patch, logoUrl: reusableLogo };
+    }
+
     commit({
       ...draft,
       certifications: draft.certifications.map((certification) =>
-        certification.id === id ? { ...certification, ...patch } : certification
+        certification.id === id ? { ...certification, ...nextPatch } : certification
       ),
     });
   }
@@ -370,10 +432,10 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: certification.organizationUrl }),
       });
-      const data = (await response.json()) as { logoUrl?: string; error?: string };
+      const data = (await response.json()) as { logoUrl?: string; reused?: boolean; error?: string };
       if (!response.ok || !data.logoUrl) throw new Error(data.error ?? "No se encontró el logo.");
       updateCertification(certification.id, { logoUrl: data.logoUrl });
-      setMessage("Logo obtenido desde la página pública de LinkedIn.");
+      setMessage(data.reused ? "Se reutilizó el logo guardado para esta organización." : "Logo obtenido desde LinkedIn y guardado en S3.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo obtener el logo.");
     } finally {
@@ -410,18 +472,26 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
           existingKeys.add(key);
           return true;
         })
-        .map((item, index): Certification => ({
-          id: `linkedin-${slugify(item.title) || "certification"}-${Date.now()}-${index}`,
-          title: item.title,
-          issuer: item.issuer,
-          issuedAt: item.issuedAt,
-          credentialId: item.credentialId,
-          description: "",
-          certificateUrl: "",
-          verificationUrl: item.verificationUrl,
-          organizationUrl: item.organizationUrl,
-          logoUrl: "",
-        }));
+        .map((item, index): Certification => {
+          const organizationKey = normalizeLinkedInOrganizationUrl(item.organizationUrl);
+          const reusableLogo = organizationKey
+            ? draft.certifications.find(
+                (existing) => existing.logoUrl && normalizeLinkedInOrganizationUrl(existing.organizationUrl) === organizationKey
+              )?.logoUrl
+            : undefined;
+          return {
+            id: `linkedin-${slugify(item.title) || "certification"}-${Date.now()}-${index}`,
+            title: item.title,
+            issuer: item.issuer,
+            issuedAt: item.issuedAt,
+            credentialId: item.credentialId,
+            description: "",
+            certificateUrl: "",
+            verificationUrl: item.verificationUrl,
+            organizationUrl: item.organizationUrl,
+            logoUrl: reusableLogo ?? "",
+          };
+        });
 
       if (imported.length === 0) {
         setMessage("No hay certificados nuevos para importar; los encontrados ya existen.");

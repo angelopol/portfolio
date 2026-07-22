@@ -1,4 +1,5 @@
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { MediaKind } from "@/types/site";
 
@@ -40,6 +41,7 @@ function getS3Client(): S3Client {
   if (!s3Client) {
     s3Client = new S3Client({
       region,
+      requestChecksumCalculation: "WHEN_REQUIRED",
       credentials: {
         accessKeyId,
         secretAccessKey,
@@ -64,6 +66,45 @@ function getPublicBaseUrl(): string {
 
 export function buildPublicS3Url(storageKey: string): string {
   return `${getPublicBaseUrl()}/${storageKey}`;
+}
+
+export async function createDirectS3Upload(options: {
+  fileName: string;
+  mimeType: string;
+  kind: MediaKind;
+}): Promise<{ storageKey: string; url: string; uploadUrl: string; headers: Record<string, string> }> {
+  const client = getS3Client();
+  const storedFileName = createStoredFileName(options.fileName);
+  const folder = options.kind === "image" ? "images" : "documents";
+  const storageKey = `${keyPrefix}/${folder}/${storedFileName}`;
+  const cacheControl = options.kind === "image" ? "public, max-age=31536000, immutable" : "public, max-age=3600";
+  const contentDisposition = options.kind === "document" ? "inline" : undefined;
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+    ContentType: options.mimeType,
+    CacheControl: cacheControl,
+    ContentDisposition: contentDisposition,
+  });
+
+  return {
+    storageKey,
+    url: buildPublicS3Url(storageKey),
+    uploadUrl: await getSignedUrl(client, command, { expiresIn: 300 }),
+    headers: {
+      "Content-Type": options.mimeType,
+      "Cache-Control": cacheControl,
+      ...(contentDisposition ? { "Content-Disposition": contentDisposition } : {}),
+    },
+  };
+}
+
+export async function verifyDirectS3Upload(storageKey: string) {
+  const response = await getS3Client().send(new HeadObjectCommand({ Bucket: bucket, Key: storageKey }));
+  return {
+    size: response.ContentLength ?? 0,
+    mimeType: response.ContentType ?? "application/octet-stream",
+  };
 }
 
 export async function uploadPublicFileToS3(options: {
