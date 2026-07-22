@@ -119,9 +119,19 @@ body {
   animation: journey-card-enter-right 280ms ease-out both;
 }
 
+.resume-page-enter-left {
+  animation: journey-card-enter-left 240ms ease-out both;
+}
+
+.resume-page-enter-right {
+  animation: journey-card-enter-right 240ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .journey-card-enter-left,
-  .journey-card-enter-right {
+  .journey-card-enter-right,
+  .resume-page-enter-left,
+  .resume-page-enter-right {
     animation: none;
   }
 }
