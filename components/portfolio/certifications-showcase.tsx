@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { FiArrowLeft, FiArrowRight, FiAward, FiExternalLink, FiX } from "react-icons/fi";
 
 import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
@@ -60,6 +61,9 @@ export function CertificationsShowcase({ certifications, language }: { certifica
   }, [selected]);
 
   const current = certifications[index];
+  const modalRoot = typeof document === "undefined"
+    ? null
+    : document.getElementById("portfolio-modal-root") ?? document.body;
 
   return (
     <>
@@ -132,9 +136,9 @@ export function CertificationsShowcase({ certifications, language }: { certifica
         )}
       </div>
 
-      {selected && (
+      {selected && modalRoot ? createPortal(
         <div
-          className="fixed inset-0 z-[80] bg-[var(--color-overlay)] backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] isolate bg-[var(--color-overlay)] backdrop-blur-sm"
           onClick={() => setSelected(null)}
         >
           <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-4">
@@ -252,8 +256,9 @@ export function CertificationsShowcase({ certifications, language }: { certifica
               </section>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        modalRoot,
+      ) : null}
     </>
   );
 }

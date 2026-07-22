@@ -358,6 +358,8 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
           <p>© {currentYear} · {copy.builtWith}</p>
         </div>
       </footer>
+
+      <div id="portfolio-modal-root" />
     </div>
   );
 }
