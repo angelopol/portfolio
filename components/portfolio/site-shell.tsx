@@ -73,7 +73,7 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
   ];
 
   return (
-    <div style={themeStyle} className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
+    <div style={themeStyle} className="min-h-screen overflow-x-clip bg-[var(--color-background)] text-[var(--color-text)]">
       <div aria-hidden="true" className="sparkle-field">
         {Array.from({ length: 18 }).map((_, index) => (
           <span
@@ -211,8 +211,8 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
         </section>
 
         <section id="about" className="section-shell py-8 lg:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="glass-panel p-8 shadow-glow">
+          <div className="grid items-start gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="glass-panel p-8 shadow-glow lg:col-start-1 lg:row-start-1">
               <span className="section-label">{copy.about}</span>
               <h2 className="section-title max-w-3xl">{content.about.headline}</h2>
 
@@ -223,7 +223,11 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
               </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="lg:col-start-1 lg:row-start-2">
+              <CertificationsShowcase certifications={content.certifications} language={language} />
+            </div>
+
+            <div className="space-y-8 lg:col-start-2 lg:row-start-1">
               <div className="glass-panel p-8">
                 <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.focusAreas}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
@@ -251,22 +255,20 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="glass-panel p-8">
-                <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.tools}</h3>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  {content.about.toolset.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
+            <div className="glass-panel p-8 lg:col-start-2 lg:row-start-2">
+              <h3 className="font-display text-xl font-semibold text-[var(--color-text)]">{copy.tools}</h3>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {content.about.toolset.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-4 py-2 text-sm text-[var(--color-text)]"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
-
-              <CertificationsShowcase certifications={content.certifications} language={language} />
             </div>
           </div>
         </section>

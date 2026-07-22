@@ -49,11 +49,12 @@ export function CertificationsShowcase({ certifications, language }: { certifica
       if (event.key === "Escape") setSelected(null);
     }
 
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", closeOnEscape);
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [selected]);
@@ -117,7 +118,7 @@ export function CertificationsShowcase({ certifications, language }: { certifica
         )}
 
         {certifications.length > 1 && (
-          <div className="mt-4 flex items-center gap-2" aria-label={`${index + 1} de ${certifications.length}`}>
+          <div className="mt-4 flex flex-wrap items-center gap-2" aria-label={`${index + 1} de ${certifications.length}`}>
             {certifications.map((item, dotIndex) => (
               <button
                 key={item.id}
@@ -133,63 +134,122 @@ export function CertificationsShowcase({ certifications, language }: { certifica
 
       {selected && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--color-overlay)] p-4 backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="certification-title"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setSelected(null);
-          }}
+          className="fixed inset-0 z-[80] bg-[var(--color-overlay)] backdrop-blur-sm"
+          onClick={() => setSelected(null)}
         >
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 p-6 backdrop-blur">
-              <div className="flex items-center gap-4">
-                <IssuerLogo certification={selected} large />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">{selected.issuer}</p>
-                  <h3 id="certification-title" className="mt-1 font-display text-2xl font-semibold text-[var(--color-text)]">{selected.title}</h3>
-                </div>
-              </div>
+          <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`certification-modal-title-${selected.id}`}
+              aria-describedby={selected.description ? `certification-modal-description-${selected.id}` : undefined}
+              className="relative grid h-full max-h-[calc(100vh-1rem)] w-full max-w-[1700px] overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl lg:grid-cols-[360px_minmax(0,1fr)]"
+              onClick={(event) => event.stopPropagation()}
+            >
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                aria-label={copy.close}
-                className="rounded-full border border-[var(--color-border)] p-3 text-[var(--color-text)] transition hover:bg-[var(--color-ghost)]"
+                className="pointer-events-auto absolute right-3 top-3 z-[95] inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)]/95 text-[var(--color-text)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] sm:right-4 sm:top-4 sm:h-auto sm:w-auto sm:min-h-11 sm:min-w-11 sm:gap-2 sm:px-4"
+                aria-label={`${copy.close}: ${selected.title}`}
+                title={copy.close}
               >
-                <FiX />
+                <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden text-sm font-semibold sm:inline">{copy.close}</span>
               </button>
-            </div>
 
-            <div className="grid gap-6 p-6 lg:grid-cols-[0.68fr_1.32fr]">
-              <div>
-                {selected.issuedAt && <p className="text-sm text-[var(--color-muted)]">{copy.issued}: {selected.issuedAt}</p>}
-                {selected.credentialId && <p className="mt-2 break-all text-sm text-[var(--color-muted)]">{copy.credentialId}: {selected.credentialId}</p>}
-                <p className="mt-5 text-sm leading-7 text-[var(--color-muted)]">{selected.description}</p>
-                <div className="mt-6 flex flex-col gap-3">
+              <aside className="relative z-0 order-2 flex h-full min-h-0 flex-col overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] p-6 lg:order-1 lg:border-r lg:border-t-0 lg:p-8">
+                <div className="flex items-start gap-4 pr-12 lg:pr-0">
+                  <IssuerLogo certification={selected} large />
+                  <div className="min-w-0 flex-1">
+                    <p className="section-label">{copy.certifications}</p>
+                    <h3
+                      id={`certification-modal-title-${selected.id}`}
+                      className="font-display text-2xl font-semibold leading-tight text-[var(--color-text)]"
+                    >
+                      {selected.title}
+                    </h3>
+                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent-soft)]">
+                      {selected.issuer}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-8 space-y-3 border-y border-[var(--color-border)] py-5">
+                  {selected.issuedAt && (
+                    <p className="text-sm text-[var(--color-muted)]">
+                      <span className="font-semibold text-[var(--color-text)]">{copy.issued}:</span> {selected.issuedAt}
+                    </p>
+                  )}
+                  {selected.credentialId && (
+                    <p className="break-all text-sm text-[var(--color-muted)]">
+                      <span className="font-semibold text-[var(--color-text)]">{copy.credentialId}:</span> {selected.credentialId}
+                    </p>
+                  )}
+                </div>
+
+                {selected.description && (
+                  <p
+                    id={`certification-modal-description-${selected.id}`}
+                    className="mt-6 text-sm leading-8 text-[var(--color-muted)]"
+                  >
+                    {selected.description}
+                  </p>
+                )}
+
+                <div className="mt-auto flex flex-col gap-3 pt-10">
                   {selected.verificationUrl && (
-                    <a href={selected.verificationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
-                      <FiExternalLink /> {copy.verifyCredential}
+                    <a
+                      href={selected.verificationUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    >
+                      <FiExternalLink />
+                      {copy.verifyCredential}
                     </a>
                   )}
                   {selected.organizationUrl && (
-                    <a href={selected.organizationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-ghost)]">
+                    <a
+                      href={selected.organizationUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-ghost)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)]"
+                    >
                       {copy.organizationLinkedIn}
                     </a>
                   )}
                 </div>
-              </div>
+              </aside>
 
-              <div className="min-h-[420px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white/5">
-                {selected.certificateUrl ? (
-                  /\.pdf(?:$|\?)/i.test(selected.certificateUrl) ? (
-                    <iframe src={selected.certificateUrl} title={`${copy.certificate} ${selected.title}`} className="h-[65vh] min-h-[420px] w-full bg-white" />
+              <section className="relative z-0 order-1 flex min-h-[52vh] min-h-0 flex-col bg-[var(--color-background)] lg:order-2">
+                <div className="relative min-h-0 flex-1 overflow-hidden bg-[var(--color-background)]">
+                  {selected.certificateUrl ? (
+                    /\.pdf(?:$|\?)/i.test(selected.certificateUrl) ? (
+                      <iframe
+                        src={selected.certificateUrl}
+                        title={`${copy.certificate} ${selected.title}`}
+                        className="h-full min-h-[52vh] w-full bg-white"
+                      />
+                    ) : (
+                      <img
+                        src={selected.certificateUrl}
+                        alt={`${copy.certificate} ${selected.title}`}
+                        className="h-full min-h-[52vh] w-full object-contain p-4 sm:p-8"
+                      />
+                    )
                   ) : (
-                    <img src={selected.certificateUrl} alt={`${copy.certificate} ${selected.title}`} className="h-full min-h-[420px] w-full object-contain" />
-                  )
-                ) : (
-                  <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[var(--color-muted)]">{copy.missingCertificate}</div>
-                )}
-              </div>
+                    <div className="flex h-full min-h-[52vh] items-center justify-center p-8 text-center text-sm text-[var(--color-muted)]">
+                      {copy.missingCertificate}
+                    </div>
+                  )}
+                </div>
+
+                <div className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-soft)] px-5 py-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                    {copy.certificate}
+                  </p>
+                </div>
+              </section>
             </div>
           </div>
         </div>
