@@ -2180,11 +2180,12 @@ export function AdminWorkspace({
                   <p className="flex items-center gap-2 text-xs text-slate-500">
                     <FiMove /> Arrastra las certificaciones para cambiar su
                     orden de aparición. Las flechas funcionan como alternativa
-                    táctil y accesible.
+                    táctil y accesible. Este ordenador siempre muestra la lista
+                    completa.
                   </p>
-                  {paginatedCertifications.map((certification, index) => {
-                    const absoluteIndex =
-                      certificationsPage * ADMIN_PAGE_SIZE + index;
+                  <div className="grid gap-3 xl:grid-cols-2">
+                  {draft.certifications.map((certification, index) => {
+                    const absoluteIndex = index;
 
                     return (
                       <div
@@ -2358,6 +2359,7 @@ export function AdminWorkspace({
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
               {draft.certifications.length === 0 ? (
