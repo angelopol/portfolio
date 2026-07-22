@@ -46,24 +46,40 @@ export function CertificationsShowcase({ certifications, language }: { certifica
   useEffect(() => {
     if (!selected) return;
 
-    function closeOnEscape(event: KeyboardEvent) {
+    function handleModalKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") setSelected(null);
+      if (event.key === "ArrowLeft") moveSelectedCertification(-1);
+      if (event.key === "ArrowRight") moveSelectedCertification(1);
     }
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleModalKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", handleModalKeyDown);
     };
-  }, [selected]);
+  }, [selected, certifications]);
 
   const current = certifications[index];
+  const selectedIndex = selected
+    ? certifications.findIndex((certification) => certification.id === selected.id)
+    : -1;
   const modalRoot = typeof document === "undefined"
     ? null
     : document.getElementById("portfolio-modal-root") ?? document.body;
+
+  function moveSelectedCertification(offset: -1 | 1) {
+    if (!selected || certifications.length <= 1) return;
+    const currentIndex = certifications.findIndex(
+      (certification) => certification.id === selected.id,
+    );
+    if (currentIndex < 0) return;
+    const nextIndex = (currentIndex + offset + certifications.length) % certifications.length;
+    setIndex(nextIndex);
+    setSelected(certifications[nextIndex]);
+  }
 
   return (
     <>
@@ -177,6 +193,32 @@ export function CertificationsShowcase({ certifications, language }: { certifica
                     </p>
                   </div>
                 </div>
+
+                {certifications.length > 1 && (
+                  <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-ghost)] p-2">
+                    <span className="px-2 text-xs font-bold tabular-nums tracking-[0.16em] text-[var(--color-muted)]">
+                      {String(selectedIndex + 1).padStart(2, "0")} / {String(certifications.length).padStart(2, "0")}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedCertification(-1)}
+                        aria-label={copy.previousCertification}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+                      >
+                        <FiArrowLeft />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedCertification(1)}
+                        aria-label={copy.nextCertification}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+                      >
+                        <FiArrowRight />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-8 space-y-3 border-y border-[var(--color-border)] py-5">
                   {selected.issuedAt && (

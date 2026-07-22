@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -46,6 +47,12 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
     () => (selectedProject ? getProjectSlides(selectedProject) : []),
     [selectedProject]
   );
+  const selectedProjectIndex = selectedProject
+    ? projects.findIndex((project) => project.id === selectedProject.id)
+    : -1;
+  const modalRoot = typeof document === "undefined"
+    ? null
+    : document.getElementById("portfolio-modal-root") ?? document.body;
 
   const projectPageCount = Math.max(1, Math.ceil(projects.length / projectsPerPage));
   const visibleProjects = useMemo(
@@ -158,6 +165,14 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
     router.replace(nextUrl, { scroll: false });
     setSelectedProjectId(null);
     setActiveSlideIndex(0);
+  }
+
+  function moveSelectedProject(offset: -1 | 1) {
+    if (!selectedProject || projects.length <= 1) return;
+    const currentIndex = projects.findIndex((project) => project.id === selectedProject.id);
+    if (currentIndex < 0) return;
+    const nextIndex = (currentIndex + offset + projects.length) % projects.length;
+    openProject(projects[nextIndex].id);
   }
 
   async function shareProject(projectId: string) {
@@ -397,9 +412,9 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
         </div>
       )}
 
-      {selectedProject && (
+      {selectedProject && modalRoot ? createPortal(
           <div
-            className="fixed inset-0 z-[80] bg-[var(--color-overlay)] backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] isolate bg-[var(--color-overlay)] backdrop-blur-sm"
             onClick={closeProject}
           >
           <div className="flex h-full w-full items-stretch justify-center p-2 sm:p-4">
@@ -443,6 +458,32 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
                     </span>
                   )}
                 </div>
+
+                {projects.length > 1 && (
+                  <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-ghost)] p-2">
+                    <span className="px-2 text-xs font-bold tabular-nums tracking-[0.16em] text-[var(--color-muted)]">
+                      {String(selectedProjectIndex + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedProject(-1)}
+                        aria-label={copy.previousProject}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+                      >
+                        <FiChevronLeft />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSelectedProject(1)}
+                        aria-label={copy.nextProject}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-ghost-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
+                      >
+                        <FiChevronRight />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <p
                   id={`project-modal-description-${selectedProject.id}`}
@@ -593,8 +634,9 @@ export function ProjectsShowcase({ projects, language }: { projects: Project[]; 
               </section>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        modalRoot,
+      ) : null}
     </>
   );
 }
