@@ -12,6 +12,9 @@ export function localizeSiteContent(content: SiteContent, language: SiteLanguage
 
   const translations = content.translations?.es ?? {};
   const translated = (key: string, fallback: string) => translations[key]?.trim() || fallback;
+  const spanishResumeUrl = content.resume.downloadUrlEs ||
+    content.resume.downloadUrlEn ||
+    content.resume.downloadUrl;
 
   return {
     ...content,
@@ -40,6 +43,7 @@ export function localizeSiteContent(content: SiteContent, language: SiteLanguage
       secondaryCta: {
         ...content.home.secondaryCta,
         label: translated("home.secondaryCta.label", content.home.secondaryCta.label),
+        href: spanishResumeUrl,
       },
       metrics: content.home.metrics.map((metric, index) => ({
         label: translated(`home.metrics.${index}.label`, metric.label),
@@ -108,6 +112,7 @@ export function localizeSiteContent(content: SiteContent, language: SiteLanguage
     })),
     resume: {
       ...content.resume,
+      downloadUrl: spanishResumeUrl,
       fullName: translated("resume.fullName", content.resume.fullName),
       title: translated("resume.title", content.resume.title),
       description: translated("resume.description", content.resume.description),

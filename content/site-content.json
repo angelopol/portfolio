@@ -183,6 +183,8 @@
     "previewTitle": "Desktop resume preview",
     "previewText": "On desktop, the resume is displayed in an embedded preview. On mobile, some browsers may download the PDF automatically, so the experience is supported with direct actions.",
     "downloadUrl": "/assets/CV - Angelo Polgrossi - English.pdf",
+    "downloadUrlEn": "/assets/CV - Angelo Polgrossi - English.pdf",
+    "downloadUrlEs": "/assets/CV - Angelo Polgrossi.pdf",
     "openLabel": "Open resume",
     "downloadLabel": "Download resume",
     "softSkills": [

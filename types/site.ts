@@ -95,7 +95,10 @@ export type ResumeContent = {
   description: string;
   previewTitle: string;
   previewText: string;
+  /** Legacy/default alias kept in sync with the English resume. */
   downloadUrl: string;
+  downloadUrlEn: string;
+  downloadUrlEs: string;
   openLabel: string;
   downloadLabel: string;
   softSkills: string[];

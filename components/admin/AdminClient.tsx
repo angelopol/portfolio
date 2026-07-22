@@ -373,6 +373,8 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
     return (
       draft.about.profileImage === url ||
       draft.resume.downloadUrl === url ||
+      draft.resume.downloadUrlEn === url ||
+      draft.resume.downloadUrlEs === url ||
       draft.home.secondaryCta.href === url ||
       draft.projects.some(
         (project) => project.image === url || Boolean(project.gallery?.includes(url))
@@ -409,6 +411,7 @@ export function AdminClient({ initialContent }: { initialContent: SiteContent })
         resume: {
           ...draft.resume,
           downloadUrl: url,
+          downloadUrlEn: url,
         },
       },
       { recordHistory: true, historyLabel: "Resume: archivo principal" }

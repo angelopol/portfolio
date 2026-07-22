@@ -373,6 +373,25 @@ export function AdminWorkspace({
     setMessage(null);
   }
 
+  function updateResumeDocument(language: "en" | "es", url: string) {
+    const isEnglish = language === "en";
+    commit({
+      ...draft,
+      resume: {
+        ...draft.resume,
+        ...(isEnglish
+          ? { downloadUrl: url, downloadUrlEn: url }
+          : { downloadUrlEs: url }),
+      },
+      home: isEnglish
+        ? {
+            ...draft.home,
+            secondaryCta: { ...draft.home.secondaryCta, href: url },
+          }
+        : draft.home,
+    });
+  }
+
   async function save(nextDraft = draft, quiet = false) {
     setSaving(true);
     if (!quiet) setMessage(null);
@@ -2716,58 +2735,68 @@ export function AdminWorkspace({
                       }
                     />
                   </Field>
-                  <Field label="URL del PDF">
-                    <input
-                      className={fieldClass}
-                      value={draft.resume.downloadUrl}
-                      onChange={(event) =>
-                        commit({
-                          ...draft,
-                          resume: {
-                            ...draft.resume,
-                            downloadUrl: event.target.value,
-                          },
-                          home: {
-                            ...draft.home,
-                            secondaryCta: {
-                              ...draft.home.secondaryCta,
-                              href: event.target.value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </Field>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5">
-                    <FiUploadCloud />{" "}
-                    {uploading === "resume" ? "Subiendo..." : "Subir PDF"}
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
-                        const url = await uploadAsset(
-                          file,
-                          "document",
-                          "resume",
-                        );
-                        if (url)
-                          commit({
-                            ...draft,
-                            resume: { ...draft.resume, downloadUrl: url },
-                            home: {
-                              ...draft.home,
-                              secondaryCta: {
-                                ...draft.home.secondaryCta,
-                                href: url,
-                              },
-                            },
-                          });
-                      }}
-                    />
-                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {([
+                      {
+                        language: "en",
+                        title: "Currículum en inglés",
+                        hint: "Documento predeterminado",
+                        url: draft.resume.downloadUrlEn,
+                      },
+                      {
+                        language: "es",
+                        title: "Currículum en español",
+                        hint: "Se muestra al seleccionar ES",
+                        url: draft.resume.downloadUrlEs,
+                      },
+                    ] as const).map((document) => {
+                      const uploadKey = `resume-${document.language}`;
+                      return (
+                        <div
+                          key={document.language}
+                          className="rounded-2xl border border-white/10 bg-slate-950/30 p-4"
+                        >
+                          <div className="mb-4">
+                            <p className="text-sm font-semibold text-white">{document.title}</p>
+                            <p className="mt-1 text-xs text-slate-500">{document.hint}</p>
+                          </div>
+                          <Field label={`URL del PDF · ${document.language.toUpperCase()}`}>
+                            <input
+                              className={fieldClass}
+                              value={document.url}
+                              onChange={(event) =>
+                                updateResumeDocument(document.language, event.target.value)
+                              }
+                            />
+                          </Field>
+                          <label
+                            className={`mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold transition hover:bg-white/5 ${
+                              uploading ? "cursor-wait opacity-60" : "cursor-pointer"
+                            }`}
+                          >
+                            <FiUploadCloud />
+                            {uploading === uploadKey
+                              ? "Subiendo..."
+                              : `Subir PDF ${document.language.toUpperCase()}`}
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              disabled={Boolean(uploading)}
+                              onChange={async (event) => {
+                                const input = event.currentTarget;
+                                const file = input.files?.[0];
+                                if (!file) return;
+                                const url = await uploadAsset(file, "document", uploadKey);
+                                if (url) updateResumeDocument(document.language, url);
+                                input.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="mt-6 glass-panel border border-white/10 p-6">

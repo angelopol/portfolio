@@ -13,6 +13,14 @@ const contentFilePath = path.join(process.cwd(), "content", "site-content.json")
 
 export function normalizeSiteContent(content: SiteContent): SiteContent {
   const legacyContent = content as SiteContent & { contact?: Partial<ContactInfo> };
+  const legacyResume = content.resume as SiteContent["resume"] & {
+    downloadUrlEn?: string;
+    downloadUrlEs?: string;
+  };
+  const englishResumeUrl = legacyResume.downloadUrlEn?.trim() ||
+    legacyResume.downloadUrl?.trim() ||
+    content.home.secondaryCta.href;
+  const spanishResumeUrl = legacyResume.downloadUrlEs?.trim() || englishResumeUrl;
 
   return {
     ...content,
@@ -36,6 +44,9 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
     resume: {
       ...content.resume,
       fullName: content.resume.fullName || content.site.name,
+      downloadUrl: englishResumeUrl,
+      downloadUrlEn: englishResumeUrl,
+      downloadUrlEs: spanishResumeUrl,
       softSkills: Array.isArray(content.resume.softSkills) ? content.resume.softSkills : [],
       languages: Array.isArray(content.resume.languages) ? content.resume.languages : [],
     },
@@ -81,8 +92,9 @@ export async function getSiteContent(): Promise<SiteContent> {
 }
 
 export async function saveSiteContent(content: SiteContent): Promise<void> {
+  const normalizedContent = normalizeSiteContent(content);
   if (!isSupabaseConfigured()) {
-    const nextContent = `${JSON.stringify(content, null, 2)}\n`;
+    const nextContent = `${JSON.stringify(normalizedContent, null, 2)}\n`;
     await fs.writeFile(contentFilePath, nextContent, "utf8");
     return;
   }
@@ -92,7 +104,7 @@ export async function saveSiteContent(content: SiteContent): Promise<void> {
   const { error } = await supabase.from("site_content").upsert(
     {
       id: rowId,
-      content,
+      content: normalizedContent,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }
@@ -100,7 +112,7 @@ export async function saveSiteContent(content: SiteContent): Promise<void> {
 
   if (error) {
     if (isMissingSupabaseTableError(error.message)) {
-      const nextContent = `${JSON.stringify(content, null, 2)}\n`;
+      const nextContent = `${JSON.stringify(normalizedContent, null, 2)}\n`;
       await fs.writeFile(contentFilePath, nextContent, "utf8");
       return;
     }
