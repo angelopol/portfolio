@@ -71,11 +71,14 @@ export async function validateResumePdf(
   const document = await getDocumentProxy(Uint8Array.from(buffer));
   let totalPages = 0;
   let extractedText = "";
+  let normalizedPages: string[] = [];
 
   try {
-    const result = await extractText(document, { mergePages: true });
+    const result = await extractText(document);
     totalPages = result.totalPages;
-    extractedText = Array.isArray(result.text) ? result.text.join("\n") : result.text;
+    const pages = Array.isArray(result.text) ? result.text : [result.text];
+    extractedText = pages.join("\n");
+    normalizedPages = pages.map(searchable);
   } catch {
     issues.push("No se pudo extraer la capa de texto seleccionable.");
   } finally {
@@ -205,6 +208,24 @@ export async function validateResumePdf(
   } else {
     checks.push("canonical-content");
     checks.push("record-reading-order");
+  }
+
+  const splitExperience = resume.experience.find((entry) => {
+    const identifyingValues = [entry.organization || entry.title, entry.title]
+      .map(searchable)
+      .filter(Boolean);
+    const contentValues = [entry.summary, ...entry.highlights]
+      .map(searchable)
+      .filter(Boolean);
+    const page = normalizedPages.find((candidate) =>
+      identifyingValues.every((value) => candidate.includes(value))
+    );
+    return !page || contentValues.some((value) => !page.includes(value));
+  });
+  if (splitExperience) {
+    issues.push(`La experiencia ${splitExperience.organization || splitExperience.title} quedo dividida entre paginas.`);
+  } else {
+    checks.push("experience-page-integrity");
   }
 
   if (issues.length) throw new ResumePdfValidationError(issues);

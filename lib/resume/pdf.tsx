@@ -403,7 +403,7 @@ function ExperienceEntry({ entry, layout, compact }: { entry: GeneratedResumeExp
   );
 
   return (
-    <View style={[styles.entry, compact ? styles.entryCompact : {}]}>
+    <View style={[styles.entry, compact ? styles.entryCompact : {}]} wrap={false}>
       {layout === "visual" ? (
         <View style={styles.entryHeaderRow} wrap={false}>
           <View style={styles.entryHeaderMain}>{heading}</View>
