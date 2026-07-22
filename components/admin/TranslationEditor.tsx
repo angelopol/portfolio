@@ -180,7 +180,10 @@ export function TranslationEditor({
       const response = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: field.source, context: field.label }),
+        body: JSON.stringify({
+          text: field.source,
+          context: field.label.split("·").at(-1)?.trim() || "contenido de portfolio",
+        }),
       });
       const data = (await response.json()) as { translation?: string; error?: string };
       if (!response.ok || !data.translation) throw new Error(data.error ?? "No se pudo sugerir la traducción.");

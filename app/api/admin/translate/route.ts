@@ -14,6 +14,30 @@ function ensureAdmin() {
   return hasAdminSession(cookies().get(ADMIN_COOKIE_NAME)?.value);
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function cleanTranslation(value: string, context?: string) {
+  let cleaned = value
+    .trim()
+    .replace(/^```(?:text|plaintext|spanish|español)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
+  if (context?.trim()) {
+    const contextPrefix = new RegExp(
+      `^${escapeRegExp(context.trim())}\\s*(?:[·:—-]\\s*|\\r?\\n)`,
+      "i"
+    );
+    cleaned = cleaned.replace(contextPrefix, "").trim();
+  }
+
+  return cleaned
+    .replace(/^(?:traducción(?:\s+al\s+español)?|español)\s*:\s*/i, "")
+    .trim();
+}
+
 export async function POST(request: Request) {
   if (!ensureAdmin()) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -43,12 +67,16 @@ export async function POST(request: Request) {
   }
 
   const prompt = [
-    "Translate the following portfolio content from English to natural, professional Latin American Spanish.",
+    "Translate only the source content below from English to natural, professional Latin American Spanish.",
     "Preserve product names, technology names, URLs, identifiers, punctuation, and the original formatting.",
-    "Do not explain the translation and do not wrap it in quotes. Return only the translated text.",
-    payload.context ? `Field context: ${payload.context}` : "",
+    "The field type is metadata for meaning only. Never copy it, translate it, or add it to the output.",
+    "Do not add a title, field name, prefix, explanation, quotation marks, or Markdown.",
+    "Return exactly and exclusively the translated source content.",
+    payload.context ? `FIELD TYPE (DO NOT OUTPUT): ${payload.context}` : "",
     "",
+    "SOURCE CONTENT START",
     text,
+    "SOURCE CONTENT END",
   ]
     .filter(Boolean)
     .join("\n");
@@ -75,10 +103,14 @@ export async function POST(request: Request) {
       throw new Error(data.error?.message || "Gemini no pudo generar la traducción.");
     }
 
-    const translation = data.candidates?.[0]?.content?.parts
+    const rawTranslation = data.candidates?.[0]?.content?.parts
       ?.map((part) => part.text || "")
       .join("")
       .trim();
+
+    const translation = rawTranslation
+      ? cleanTranslation(rawTranslation, payload.context)
+      : "";
 
     if (!translation) throw new Error("Gemini devolvió una respuesta vacía.");
 
