@@ -77,6 +77,7 @@ export async function POST(request: Request) {
     const generationRequest: ResumeGenerationRequest = {
       language: payload.language === "es" ? "es" : "en",
       layout,
+      profileImageUrl: optionalText(payload.profileImageUrl, 2048),
       targetRole: optionalText(payload.targetRole, 240),
       jobDescription: optionalText(payload.jobDescription, 6000),
       additionalInstructions: optionalText(payload.additionalInstructions, 2000),
@@ -94,7 +95,8 @@ export async function POST(request: Request) {
     const rendered = await renderResumePdf(
       resume,
       content.about.profileImage,
-      layout
+      layout,
+      generationRequest.profileImageUrl
     );
     const fileName = `${safeFileName(resume.fullName) || "resume"}-${generationRequest.language}-${layout}.pdf`;
 

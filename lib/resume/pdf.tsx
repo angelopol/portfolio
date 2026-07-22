@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
   headerAts: { marginBottom: 13 },
   photo: { width: 72, height: 82, objectFit: "cover", marginRight: 16 },
   headerText: { flexGrow: 1, flexShrink: 1 },
-  name: { fontFamily: "Times-Bold", fontSize: 22, marginBottom: 3 },
+  name: { fontFamily: "Times-Bold", fontSize: 22, lineHeight: 1.12, marginBottom: 6 },
   nameCompact: { fontSize: 20 },
-  professionalTitle: { fontFamily: "Times-Bold", fontSize: 10.5, marginBottom: 4, color: colors.muted },
+  professionalTitle: { fontFamily: "Times-Bold", fontSize: 10.5, lineHeight: 1.25, marginBottom: 5, color: colors.muted },
   contactLine: { fontSize: 9.8, marginBottom: 2 },
   link: { color: colors.link, textDecoration: "underline" },
   summary: { fontSize: 10.4, lineHeight: 1.3, textAlign: "justify" },
@@ -75,8 +75,7 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: "row", marginLeft: 11, marginTop: 1 },
   bullet: { width: 10 },
   bulletText: { flex: 1 },
-  references: { flexDirection: "row", flexWrap: "wrap", marginTop: 3 },
-  referenceLink: { marginRight: 8, color: colors.link, textDecoration: "underline", fontSize: 9 },
+  inlineReferenceLink: { color: colors.link, textDecoration: "underline" },
   educationEntry: { marginBottom: 7 },
   certificationEntry: { marginBottom: 3, marginLeft: 11 },
   skillsList: { marginLeft: 11 },
@@ -345,15 +344,26 @@ function ContactHeader({ resume, image, compact, layout }: { resume: GeneratedRe
   return <View style={styles.headerAts}>{content}</View>;
 }
 
-function ReferenceLinks({ links }: { links: Array<{ label: string; url: string }> }) {
-  if (!links.length) return null;
+function InlineReferenceLinks({ links }: { links: Array<{ label: string; url: string }> }) {
+  const validLinks = links.flatMap((link) => {
+    const href = safeHttpUrl(link.url);
+    return href ? [{ ...link, href }] : [];
+  });
+  if (!validLinks.length) return null;
+
   return (
-    <View style={styles.references}>
-      {links.map((link, index) => {
-        const href = safeHttpUrl(link.url);
-        return href ? <Link key={`${link.url}-${index}`} src={href} style={styles.referenceLink}>{link.label || prettyUrl(link.url)}</Link> : null;
-      })}
-    </View>
+    <Text>
+      {" ("}
+      {validLinks.map((link, index) => (
+        <Text key={`${link.url}-${index}`}>
+          {index ? ", " : ""}
+          <Link src={link.href} style={styles.inlineReferenceLink}>
+            {link.label || prettyUrl(link.url)}
+          </Link>
+        </Text>
+      ))}
+      {")"}
+    </Text>
   );
 }
 
@@ -395,9 +405,13 @@ function ExperienceEntry({ entry, layout, compact }: { entry: GeneratedResumeExp
           {(entry.location || dates) ? <Text style={styles.meta}>{[entry.location, dates].filter(Boolean).join(" | ")}</Text> : null}
         </View>
       )}
-      {entry.summary ? <Text style={styles.entrySummary}>{entry.summary}</Text> : null}
+      {entry.summary || entry.links.length ? (
+        <Text style={styles.entrySummary}>
+          {entry.summary}
+          <InlineReferenceLinks links={entry.links} />
+        </Text>
+      ) : null}
       <Bullets items={entry.highlights} />
-      <ReferenceLinks links={entry.links} />
     </View>
   );
 }
@@ -424,8 +438,12 @@ function EducationEntry({ entry, layout }: { entry: GeneratedResumeEducation; la
           {(entry.location || dates) ? <Text style={styles.meta}>{[entry.location, dates].filter(Boolean).join(" | ")}</Text> : null}
         </View>
       )}
-      {entry.description ? <Text style={styles.entrySummary}>{entry.description}</Text> : null}
-      <ReferenceLinks links={entry.links} />
+      {entry.description || entry.links.length ? (
+        <Text style={styles.entrySummary}>
+          {entry.description}
+          <InlineReferenceLinks links={entry.links} />
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -502,14 +520,6 @@ function ExperienceSection({ resume, entries, layout, heading, compact }: { resu
 
 function ResumeDocument({ resume, image, compact, layout }: { resume: GeneratedResume; image?: string; compact: boolean; layout: ResumeLayout }) {
   const copy = labels[resume.language];
-  const wordEstimate = [
-    resume.summary,
-    ...resume.experience.flatMap((entry) => [entry.summary, ...entry.highlights]),
-    ...resume.education.map((entry) => entry.description),
-  ].join(" ").split(/\s+/).filter(Boolean).length;
-  const singlePage = resume.experience.length <= 2 && resume.education.length <= 2 && wordEstimate < 350;
-  const firstPageEntries = singlePage ? resume.experience : resume.experience.slice(0, 2);
-  const secondPageEntries = singlePage ? [] : resume.experience.slice(2);
   const pageStyle = [styles.page, compact ? styles.pageCompact : {}];
   const metadataKeywords = Array.from(new Set([
     ...resume.skills.technical.slice(0, 12),
@@ -530,17 +540,11 @@ function ResumeDocument({ resume, image, compact, layout }: { resume: GeneratedR
       <Page size="LETTER" style={pageStyle}>
         <ContactHeader resume={resume} image={image} compact={compact} layout={layout} />
         {resume.summary ? <View style={styles.section}><SectionHeading>{copy.summary}</SectionHeading><Text style={styles.summary}>{resume.summary}</Text></View> : null}
-        <ExperienceSection resume={resume} entries={firstPageEntries} layout={layout} heading compact={compact} />
-        {singlePage ? <><EducationSection resume={resume} layout={layout} /><CertificationsSection resume={resume} /><SkillsSection resume={resume} /></> : null}
+        <ExperienceSection resume={resume} entries={resume.experience} layout={layout} heading compact={compact} />
+        <EducationSection resume={resume} layout={layout} />
+        <CertificationsSection resume={resume} />
+        <SkillsSection resume={resume} />
       </Page>
-      {!singlePage ? (
-        <Page size="LETTER" style={pageStyle}>
-          <ExperienceSection resume={resume} entries={secondPageEntries} layout={layout} heading={false} compact={compact} />
-          <EducationSection resume={resume} layout={layout} />
-          <CertificationsSection resume={resume} />
-          <SkillsSection resume={resume} />
-        </Page>
-      ) : null}
     </Document>
   );
 }
@@ -559,9 +563,16 @@ export type RenderedResumePdf = {
 export async function renderResumePdf(
   resume: GeneratedResume,
   profileImage: string,
-  layout: ResumeLayout = "ats"
+  layout: ResumeLayout = "ats",
+  profileImageOverride?: string
 ): Promise<RenderedResumePdf> {
-  const image = layout === "visual" ? await resolveProfileImage(profileImage) : undefined;
+  let image: string | undefined;
+  if (layout === "visual") {
+    image = profileImageOverride
+      ? await resolveProfileImage(profileImageOverride)
+      : undefined;
+    if (!image) image = await resolveProfileImage(profileImage);
+  }
 
   for (const level of [0, 1, 2, 3, 4] as const) {
     const candidate = compactResume(resume, level);

@@ -285,6 +285,12 @@ export function AdminWorkspace({
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(
     null,
   );
+  const [draggedCertificationId, setDraggedCertificationId] = useState<
+    string | null
+  >(null);
+  const [dragOverCertificationId, setDragOverCertificationId] = useState<
+    string | null
+  >(null);
   const [projectsPage, setProjectsPage] = useState(0);
   const [certificationsPage, setCertificationsPage] = useState(0);
   const [openProjectIds, setOpenProjectIds] = useState<Set<string>>(
@@ -635,6 +641,48 @@ export function AdminWorkspace({
   function resetProjectDrag() {
     setDraggedProjectId(null);
     setDragOverProjectId(null);
+  }
+
+  function reorderCertifications(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return;
+
+    const certifications = [...draft.certifications];
+    const sourceIndex = certifications.findIndex(
+      (certification) => certification.id === sourceId,
+    );
+    const targetIndex = certifications.findIndex(
+      (certification) => certification.id === targetId,
+    );
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [certification] = certifications.splice(sourceIndex, 1);
+    certifications.splice(targetIndex, 0, certification);
+    commit({ ...draft, certifications });
+    setMessage(
+      "Orden de certificaciones actualizado. Se guardará automáticamente.",
+    );
+  }
+
+  function moveCertification(certificationId: string, offset: -1 | 1) {
+    const sourceIndex = draft.certifications.findIndex(
+      (certification) => certification.id === certificationId,
+    );
+    const target = draft.certifications[sourceIndex + offset];
+    if (sourceIndex < 0 || !target) return;
+    reorderCertifications(certificationId, target.id);
+  }
+
+  function certificationDropTargetAt(clientX: number, clientY: number) {
+    const element = document.elementFromPoint(clientX, clientY);
+    return (
+      element?.closest<HTMLElement>("[data-certification-drop-id]")?.dataset
+        .certificationDropId ?? null
+    );
+  }
+
+  function resetCertificationDrag() {
+    setDraggedCertificationId(null);
+    setDragOverCertificationId(null);
   }
 
   function updateContact(
@@ -2124,6 +2172,165 @@ export function AdminWorkspace({
                   sesión de LinkedIn.
                 </p>
               </div>
+              {draft.certifications.length > 1 && (
+                <div className="mb-8 space-y-3">
+                  <p className="flex items-center gap-2 text-xs text-slate-500">
+                    <FiMove /> Arrastra las certificaciones para cambiar su
+                    orden de aparición. Las flechas funcionan como alternativa
+                    táctil y accesible.
+                  </p>
+                  {paginatedCertifications.map((certification, index) => {
+                    const absoluteIndex =
+                      certificationsPage * ADMIN_PAGE_SIZE + index;
+
+                    return (
+                      <div
+                        key={`certification-order-${certification.id}`}
+                        data-certification-drop-id={certification.id}
+                        onDragOver={(event) => {
+                          if (!draggedCertificationId) return;
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          setDragOverCertificationId(certification.id);
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          const sourceId =
+                            draggedCertificationId ??
+                            event.dataTransfer.getData("text/plain");
+                          if (sourceId) {
+                            reorderCertifications(
+                              sourceId,
+                              certification.id,
+                            );
+                          }
+                          resetCertificationDrag();
+                        }}
+                        className={`glass-panel flex items-center gap-3 border p-3 transition sm:gap-4 ${
+                          dragOverCertificationId === certification.id &&
+                          draggedCertificationId !== certification.id
+                            ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 shadow-glow"
+                            : "border-white/10"
+                        } ${
+                          draggedCertificationId === certification.id
+                            ? "opacity-60"
+                            : "opacity-100"
+                        }`}
+                      >
+                        <span
+                          draggable
+                          role="button"
+                          tabIndex={0}
+                          title="Arrastrar para cambiar el orden"
+                          aria-label={`Mover ${certification.title}`}
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData(
+                              "text/plain",
+                              certification.id,
+                            );
+                            setDraggedCertificationId(certification.id);
+                            setDragOverCertificationId(certification.id);
+                          }}
+                          onDragEnd={resetCertificationDrag}
+                          onPointerDown={(event) => {
+                            if (event.pointerType === "mouse") return;
+                            event.preventDefault();
+                            event.currentTarget.setPointerCapture(
+                              event.pointerId,
+                            );
+                            setDraggedCertificationId(certification.id);
+                            setDragOverCertificationId(certification.id);
+                          }}
+                          onPointerMove={(event) => {
+                            if (event.pointerType === "mouse") return;
+                            const targetId = certificationDropTargetAt(
+                              event.clientX,
+                              event.clientY,
+                            );
+                            if (targetId) {
+                              setDragOverCertificationId(targetId);
+                            }
+                          }}
+                          onPointerUp={(event) => {
+                            if (event.pointerType === "mouse") return;
+                            const targetId = certificationDropTargetAt(
+                              event.clientX,
+                              event.clientY,
+                            );
+                            if (targetId) {
+                              reorderCertifications(
+                                certification.id,
+                                targetId,
+                              );
+                            }
+                            resetCertificationDrag();
+                          }}
+                          onPointerCancel={resetCertificationDrag}
+                          className="inline-flex h-11 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl border border-dashed border-white/15 text-slate-500 transition hover:border-white/30 hover:bg-white/5 hover:text-white active:cursor-grabbing"
+                        >
+                          <FiMove />
+                        </span>
+
+                        <span className="w-5 text-center text-xs font-bold text-slate-600">
+                          {absoluteIndex + 1}
+                        </span>
+
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white text-xs font-bold text-slate-800">
+                          {certification.logoUrl ? (
+                            <img
+                              src={certification.logoUrl}
+                              alt=""
+                              className="h-full w-full object-contain p-1"
+                            />
+                          ) : (
+                            certification.issuer
+                              .slice(0, 2)
+                              .toUpperCase() || <FiAward />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {certification.title}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {certification.issuer || "Emisor pendiente"}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            disabled={absoluteIndex === 0}
+                            onClick={() =>
+                              moveCertification(certification.id, -1)
+                            }
+                            aria-label={`Subir ${certification.title}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+                          >
+                            <FiArrowUp />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={
+                              absoluteIndex ===
+                              draft.certifications.length - 1
+                            }
+                            onClick={() =>
+                              moveCertification(certification.id, 1)
+                            }
+                            aria-label={`Bajar ${certification.title}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+                          >
+                            <FiArrowDown />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {draft.certifications.length === 0 ? (
                 <div className="glass-panel border border-dashed border-white/15 p-12 text-center">
                   <FiAward className="mx-auto text-4xl text-[var(--color-accent-soft)]" />
@@ -2375,7 +2582,14 @@ export function AdminWorkspace({
           )}
 
           {section === "resume-builder" && (
-            <ResumeBuilder content={draft} onChange={commit} />
+            <ResumeBuilder
+              content={draft}
+              onChange={commit}
+              onUploadProfileImage={(file) =>
+                uploadAsset(file, "image", "resume-profile")
+              }
+              uploadingProfileImage={uploading === "resume-profile"}
+            />
           )}
 
           {section === "settings" && (

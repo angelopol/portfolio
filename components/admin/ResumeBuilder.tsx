@@ -28,9 +28,22 @@ function getDownloadName(disposition: string | null) {
   return match?.[1] || "curriculum-personalizado.pdf";
 }
 
-export function ResumeBuilder({ content, onChange }: { content: SiteContent; onChange: (content: SiteContent) => void }) {
+export function ResumeBuilder({
+  content,
+  onChange,
+  onUploadProfileImage,
+  uploadingProfileImage,
+}: {
+  content: SiteContent;
+  onChange: (content: SiteContent) => void;
+  onUploadProfileImage: (file: File) => Promise<string | null>;
+  uploadingProfileImage: boolean;
+}) {
   const [language, setLanguage] = useState<ResumeLanguage>("en");
   const [layout, setLayout] = useState<ResumeLayout>("ats");
+  const [softSkillsInput, setSoftSkillsInput] = useState(() => content.resume.softSkills.join("\n"));
+  const [languagesInput, setLanguagesInput] = useState(() => content.resume.languages.join("\n"));
+  const [profileImageUrl, setProfileImageUrl] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
@@ -64,6 +77,20 @@ export function ResumeBuilder({ content, onChange }: { content: SiteContent; onC
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    const nextValue = content.resume.softSkills.join("\n");
+    setSoftSkillsInput((currentValue) =>
+      lines(currentValue).join("\n") === nextValue ? currentValue : nextValue
+    );
+  }, [content.resume.softSkills]);
+
+  useEffect(() => {
+    const nextValue = content.resume.languages.join("\n");
+    setLanguagesInput((currentValue) =>
+      lines(currentValue).join("\n") === nextValue ? currentValue : nextValue
+    );
+  }, [content.resume.languages]);
+
   function updateResume(patch: Partial<SiteContent["resume"]>) {
     onChange({ ...content, resume: { ...content.resume, ...patch } });
   }
@@ -80,6 +107,7 @@ export function ResumeBuilder({ content, onChange }: { content: SiteContent; onC
     const request: ResumeGenerationRequest & { content: SiteContent } = {
       language,
       layout,
+      profileImageUrl: profileImageUrl || undefined,
       targetRole,
       jobDescription,
       additionalInstructions,
@@ -143,8 +171,8 @@ export function ResumeBuilder({ content, onChange }: { content: SiteContent; onC
             <div className="flex items-center gap-3"><span className="rounded-xl bg-white/5 p-3 text-[var(--color-accent-soft)]"><FiUser /></span><div><h2 className="font-display text-xl font-semibold">Datos base del CV</h2><p className="mt-1 text-xs text-slate-500">Se guardan como parte del contenido del portfolio.</p></div></div>
             <Field label="Nombre completo"><input className={fieldClass} value={content.resume.fullName} onChange={(event) => updateResume({ fullName: event.target.value })} /></Field>
             <Field label="URL del portfolio"><input type="url" className={fieldClass} value={content.contact.portfolioUrl} onChange={(event) => updatePortfolioUrl(event.target.value)} placeholder="https://tudominio.com" /></Field>
-            <Field label="Habilidades blandas · una por línea"><textarea className={`${fieldClass} min-h-36`} value={content.resume.softSkills.join("\n")} onChange={(event) => updateResume({ softSkills: lines(event.target.value) })} /></Field>
-            <Field label="Idiomas · uno por línea"><textarea className={`${fieldClass} min-h-28`} value={content.resume.languages.join("\n")} onChange={(event) => updateResume({ languages: lines(event.target.value) })} /></Field>
+            <Field label="Habilidades blandas · una por línea"><textarea className={`${fieldClass} min-h-36`} value={softSkillsInput} onChange={(event) => { const value = event.target.value; setSoftSkillsInput(value); updateResume({ softSkills: lines(value) }); }} /></Field>
+            <Field label="Idiomas · uno por línea"><textarea className={`${fieldClass} min-h-28`} value={languagesInput} onChange={(event) => { const value = event.target.value; setLanguagesInput(value); updateResume({ languages: lines(value) }); }} /></Field>
           </div>
 
           <div className="glass-panel space-y-5 border border-white/10 p-6">
@@ -166,6 +194,67 @@ export function ResumeBuilder({ content, onChange }: { content: SiteContent; onC
                   : "Mantiene la foto solicitada y usa texto real, pero una plantilla visual no ofrece la misma compatibilidad que el modo ATS estricto."}
               </div>
             </Field>
+            {layout === "visual" ? (
+              <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Foto para este CV · opcional
+                </p>
+                <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <img
+                    src={profileImageUrl || content.about.profileImage}
+                    alt="Foto seleccionada para el CV"
+                    className="h-24 w-20 shrink-0 rounded-xl border border-white/10 bg-white/5 object-cover"
+                  />
+                  <div className="flex flex-1 flex-col gap-3">
+                    <p className="text-xs leading-5 text-slate-500">
+                      {profileImageUrl
+                        ? "Se usará esta foto personalizada en la próxima generación."
+                        : "Se usará la foto de perfil configurada en la landing."}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
+                        <FiImage />
+                        {uploadingProfileImage ? "Subiendo..." : "Subir otra foto"}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          className="hidden"
+                          disabled={uploadingProfileImage}
+                          onChange={async (event) => {
+                            const input = event.currentTarget;
+                            const file = input.files?.[0];
+                            if (!file) return;
+                            if (!["image/jpeg", "image/png"].includes(file.type)) {
+                              setError("La foto debe estar en formato JPG o PNG.");
+                              input.value = "";
+                              return;
+                            }
+                            if (file.size > 1_500_000) {
+                              setError("La foto para el CV no puede superar 1.5 MB.");
+                              input.value = "";
+                              return;
+                            }
+                            setError(null);
+                            const url = await onUploadProfileImage(file);
+                            if (url) setProfileImageUrl(url);
+                            input.value = "";
+                          }}
+                        />
+                      </label>
+                      {profileImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setProfileImageUrl("")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        >
+                          <FiRefreshCw /> Usar foto del portfolio
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <Field label="Idioma del documento">
               <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/50 p-1.5">
                 {(["es", "en"] as const).map((option) => <button key={option} type="button" onClick={() => setLanguage(option)} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${language === option ? "bg-[var(--color-accent)] text-white" : "text-slate-400 hover:bg-white/5"}`}>{option === "es" ? "Español" : "English"}</button>)}

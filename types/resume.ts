@@ -61,6 +61,7 @@ export type GeneratedResume = {
 export type ResumeGenerationRequest = {
   language: ResumeLanguage;
   layout?: ResumeLayout;
+  profileImageUrl?: string;
   targetRole?: string;
   jobDescription?: string;
   additionalInstructions?: string;
