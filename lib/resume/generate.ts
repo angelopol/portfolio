@@ -1,6 +1,7 @@
 import "server-only";
 
 import { localizeSiteContent } from "@/lib/i18n";
+import { certificationDateScore } from "@/lib/resume/certification-date";
 import type { SiteContent } from "@/types/site";
 import type {
   GeneratedResume,
@@ -162,11 +163,32 @@ function fallbackEducation(content: SiteContent): GeneratedResumeEducation[] {
 }
 
 function canonicalCertifications(content: SiteContent, ids: unknown): GeneratedResumeCertification[] {
-  const requestedIds = new Set(strings(ids, 10, 200));
-  const selected = content.certifications.filter((certification) => requestedIds.has(certification.id));
-  const source = selected.length ? selected : content.certifications;
+  const requestedOrder = new Map(
+    strings(ids, Math.min(100, Math.max(10, content.certifications.length)), 200).map(
+      (id, index) => [id, index]
+    )
+  );
+  const source = content.certifications
+    .map((certification, index) => ({ certification, index }))
+    .sort((left, right) => {
+      const favoriteDifference = Number(Boolean(right.certification.favorite)) -
+        Number(Boolean(left.certification.favorite));
+      if (favoriteDifference) return favoriteDifference;
 
-  return source.slice(0, 10).map((certification) => ({
+      const leftRequested = requestedOrder.get(left.certification.id);
+      const rightRequested = requestedOrder.get(right.certification.id);
+      if (leftRequested !== undefined || rightRequested !== undefined) {
+        if (leftRequested === undefined) return 1;
+        if (rightRequested === undefined) return -1;
+        if (leftRequested !== rightRequested) return leftRequested - rightRequested;
+      }
+
+      return certificationDateScore(right.certification.issuedAt) -
+        certificationDateScore(left.certification.issuedAt) || left.index - right.index;
+    })
+    .map(({ certification }) => certification);
+
+  return source.map((certification) => ({
     title: certification.title,
     issuer: certification.issuer,
     issuedAt: certification.issuedAt || "",
@@ -325,7 +347,7 @@ Hard rules:
 - Use conventional ATS language and natural keywords from the job description only when the portfolio facts support them. Never keyword-stuff.
 - Keep the summary under 100 words.
 - Select at most 6 experience entries. Write a short summary and 2-4 achievement-oriented highlights, each under 24 words.
-- Select at most 4 education entries, 28 technical skills, 10 certifications, 10 soft skills, and 8 languages.
+- Select at most 4 education entries, 28 technical skills, all relevant certification IDs, 10 soft skills, and 8 languages. Rank certificationIds by relevance; the server decides how many fit.
 - Tailor emphasis to the target role or job description when supplied, without fabricating facts.
 
 <target_role>${text(request.targetRole, "Not specified", 240)}</target_role>

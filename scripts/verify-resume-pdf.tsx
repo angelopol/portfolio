@@ -77,6 +77,30 @@ async function verify(layout: ResumeLayout) {
     checks: rendered.validation.checks,
     compactionLevel: rendered.compactionLevel,
     imageIncluded: rendered.imageIncluded,
+    certificationsIncluded: rendered.certificationsIncluded,
+  };
+}
+
+async function verifyAdaptiveCertifications() {
+  const adaptiveResume: GeneratedResume = {
+    ...resume,
+    skills: {
+      ...resume.skills,
+      certifications: Array.from({ length: 80 }, (_, index) => ({
+        title: `Adaptive Technical Certificate ${index + 1}`,
+        issuer: "Verified Certification Provider",
+        issuedAt: `${2001 + index}`,
+        verificationUrl: `https://example.com/adaptive-certificate-${index + 1}`,
+      })),
+    },
+  };
+  const rendered = await renderResumePdf(adaptiveResume, "/assets/profile.jpeg", "ats");
+  return {
+    layout: "ats-adaptive-certifications",
+    pages: rendered.validation.pages,
+    certificationsAvailable: adaptiveResume.skills.certifications.length,
+    certificationsIncluded: rendered.certificationsIncluded,
+    compactionLevel: rendered.compactionLevel,
   };
 }
 
@@ -95,8 +119,14 @@ async function main() {
     checks: rendered.validation.checks,
     compactionLevel: rendered.compactionLevel,
     imageIncluded: rendered.imageIncluded,
+    certificationsIncluded: rendered.certificationsIncluded,
   }));
-  const results = await Promise.all([verify("ats"), verify("visual"), spanishAts]);
+  const results = await Promise.all([
+    verify("ats"),
+    verify("visual"),
+    spanishAts,
+    verifyAdaptiveCertifications(),
+  ]);
   console.log(JSON.stringify(results, null, 2));
 }
 

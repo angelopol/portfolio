@@ -24,6 +24,7 @@ import {
   FiPlus,
   FiSave,
   FiSettings,
+  FiStar,
   FiTrash2,
   FiUploadCloud,
   FiUser,
@@ -783,6 +784,7 @@ export function AdminWorkspace({
           verificationUrl: "",
           organizationUrl: "",
           logoUrl: "",
+          favorite: false,
         },
       ],
     });
@@ -894,6 +896,7 @@ export function AdminWorkspace({
             verificationUrl: item.verificationUrl,
             organizationUrl: item.organizationUrl,
             logoUrl: reusableLogo ?? "",
+            favorite: false,
           };
         });
 
@@ -2302,6 +2305,32 @@ export function AdminWorkspace({
                         <div className="flex shrink-0 gap-1">
                           <button
                             type="button"
+                            aria-pressed={Boolean(certification.favorite)}
+                            onClick={() =>
+                              updateCertification(certification.id, {
+                                favorite: !certification.favorite,
+                              })
+                            }
+                            aria-label={`${certification.favorite ? "Quitar de favoritos" : "Marcar como favorito"}: ${certification.title}`}
+                            title={
+                              certification.favorite
+                                ? "Quitar prioridad para el CV"
+                                : "Priorizar en el CV"
+                            }
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition ${
+                              certification.favorite
+                                ? "border-amber-300/40 bg-amber-300/10 text-amber-200"
+                                : "border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <FiStar
+                              className={
+                                certification.favorite ? "fill-current" : ""
+                              }
+                            />
+                          </button>
+                          <button
+                            type="button"
                             disabled={absoluteIndex === 0}
                             onClick={() =>
                               moveCertification(certification.id, -1)
@@ -2372,6 +2401,15 @@ export function AdminWorkspace({
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-3">
+                          {certification.favorite ? (
+                            <span
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-200"
+                              title="Favorito para el CV"
+                              aria-label="Favorito para el CV"
+                            >
+                              <FiStar className="fill-current" />
+                            </span>
+                          ) : null}
                           {recentlyImportedCertificationIds.has(
                             certification.id,
                           ) && (

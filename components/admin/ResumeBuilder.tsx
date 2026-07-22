@@ -56,6 +56,7 @@ export function ResumeBuilder({
     ats: string;
     pages: string;
     compaction: string;
+    certifications: string;
     imageIncluded: boolean;
     layout: ResumeLayout;
   } | null>(null);
@@ -136,6 +137,7 @@ export function ResumeBuilder({
         ats: response.headers.get("X-Resume-ATS") || "text-layer-passed",
         pages: response.headers.get("X-Resume-Pages") || "-",
         compaction: response.headers.get("X-Resume-Compaction") || "0",
+        certifications: response.headers.get("X-Resume-Certifications") || "0",
         imageIncluded: response.headers.get("X-Resume-Image-Included") === "true",
         layout: response.headers.get("X-Resume-Layout") === "visual" ? "visual" : "ats",
       });
@@ -269,7 +271,7 @@ export function ResumeBuilder({
             {validation ? (
               <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
                 <p className="flex items-center gap-2 font-semibold"><FiCheckCircle /> {validation.ats === "strict-passed" ? "Validación ATS estricta superada" : "Capa de texto y estructura verificadas"}</p>
-                <p className="mt-1 text-xs leading-5 text-emerald-100/75">{validation.pages} página(s) · nivel de ajuste {validation.compaction}{validation.imageIncluded ? " · foto incluida" : " · sin foto"}</p>
+                <p className="mt-1 text-xs leading-5 text-emerald-100/75">{validation.pages} página(s) · {validation.certifications} certificado(s) incluidos · nivel de ajuste {validation.compaction}{validation.imageIncluded ? " · foto incluida" : " · sin foto"}</p>
               </div>
             ) : null}
 

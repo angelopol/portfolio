@@ -112,6 +112,7 @@ export async function POST(request: Request) {
         "X-Resume-ATS": layout === "ats" ? "strict-passed" : "text-layer-passed",
         "X-Resume-Pages": String(rendered.validation.pages),
         "X-Resume-Compaction": String(rendered.compactionLevel),
+        "X-Resume-Certifications": String(rendered.certificationsIncluded),
         "X-Resume-Image-Included": String(rendered.imageIncluded),
       },
     });

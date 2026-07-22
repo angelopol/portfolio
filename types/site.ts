@@ -69,6 +69,7 @@ export type Certification = {
   verificationUrl: string;
   organizationUrl: string;
   logoUrl?: string;
+  favorite?: boolean;
 };
 
 export type MediaKind = "image" | "document";

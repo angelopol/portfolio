@@ -18,6 +18,7 @@ import {
 } from "@react-pdf/renderer";
 import { PDFDocument } from "pdf-lib";
 
+import { newestCertificationsFirst } from "@/lib/resume/certification-date";
 import { validateResumePdf, type ResumePdfValidation } from "@/lib/resume/validate";
 import type {
   GeneratedResume,
@@ -142,14 +143,26 @@ function truncateAtWord(value: string, max: number) {
 
 type CompactionLevel = 0 | 1 | 2 | 3 | 4;
 
-function compactResume(resume: GeneratedResume, level: CompactionLevel): GeneratedResume {
-  if (level === 0) return resume;
+function compactResume(
+  resume: GeneratedResume,
+  level: CompactionLevel,
+  certificationLimit = resume.skills.certifications.length
+): GeneratedResume {
+  const certifications = newestCertificationsFirst(
+    resume.skills.certifications.slice(0, Math.max(0, certificationLimit))
+  );
+  if (level === 0) {
+    return {
+      ...resume,
+      skills: { ...resume.skills, certifications },
+    };
+  }
 
   const limits = {
-    1: { summary: 720, experiences: 5, experienceSummary: 250, highlights: 3, highlight: 150, education: 3, educationDescription: 180, technical: 24, certifications: 7, soft: 8, languages: 6 },
-    2: { summary: 560, experiences: 5, experienceSummary: 180, highlights: 3, highlight: 125, education: 3, educationDescription: 130, technical: 22, certifications: 6, soft: 7, languages: 5 },
-    3: { summary: 420, experiences: 4, experienceSummary: 120, highlights: 2, highlight: 110, education: 3, educationDescription: 100, technical: 18, certifications: 5, soft: 6, languages: 4 },
-    4: { summary: 330, experiences: 4, experienceSummary: 80, highlights: 2, highlight: 85, education: 2, educationDescription: 70, technical: 15, certifications: 4, soft: 5, languages: 4 },
+    1: { summary: 720, experiences: 6, experienceSummary: 250, highlights: 3, highlight: 150, education: 3, educationDescription: 180, technical: 24, soft: 8, languages: 6 },
+    2: { summary: 560, experiences: 6, experienceSummary: 180, highlights: 3, highlight: 125, education: 3, educationDescription: 130, technical: 22, soft: 7, languages: 5 },
+    3: { summary: 420, experiences: 6, experienceSummary: 120, highlights: 2, highlight: 110, education: 3, educationDescription: 100, technical: 18, soft: 6, languages: 4 },
+    4: { summary: 330, experiences: 5, experienceSummary: 80, highlights: 2, highlight: 85, education: 2, educationDescription: 70, technical: 15, soft: 5, languages: 4 },
   }[level];
 
   return {
@@ -170,7 +183,7 @@ function compactResume(resume: GeneratedResume, level: CompactionLevel): Generat
     })),
     skills: {
       technical: resume.skills.technical.slice(0, limits.technical),
-      certifications: resume.skills.certifications.slice(0, limits.certifications),
+      certifications,
       soft: resume.skills.soft.slice(0, limits.soft),
       languages: resume.skills.languages.slice(0, limits.languages),
     },
@@ -449,15 +462,19 @@ function EducationEntry({ entry, layout }: { entry: GeneratedResumeEducation; la
 }
 
 function SectionHeading({ children }: { children: string }) {
-  return <Text style={styles.sectionTitle} minPresenceAhead={30}>{children}</Text>;
+  return <Text style={styles.sectionTitle} minPresenceAhead={70}>{children}</Text>;
 }
 
 function EducationSection({ resume, layout }: { resume: GeneratedResume; layout: ResumeLayout }) {
   if (!resume.education.length) return null;
+  const [firstEntry, ...remainingEntries] = resume.education;
   return (
     <View style={styles.section}>
-      <SectionHeading>{labels[resume.language].education}</SectionHeading>
-      {resume.education.map((entry, index) => <EducationEntry key={index} entry={entry} layout={layout} />)}
+      <View wrap={false}>
+        <SectionHeading>{labels[resume.language].education}</SectionHeading>
+        <EducationEntry entry={firstEntry} layout={layout} />
+      </View>
+      {remainingEntries.map((entry, index) => <EducationEntry key={index} entry={entry} layout={layout} />)}
     </View>
   );
 }
@@ -558,6 +575,7 @@ export type RenderedResumePdf = {
   validation: ResumePdfValidation;
   compactionLevel: CompactionLevel;
   imageIncluded: boolean;
+  certificationsIncluded: number;
 };
 
 export async function renderResumePdf(
@@ -575,21 +593,59 @@ export async function renderResumePdf(
   }
 
   for (const level of [0, 1, 2, 3, 4] as const) {
-    const candidate = compactResume(resume, level);
-    const buffer = Buffer.from(
-      await renderToBuffer(
-        <ResumeDocument
-          resume={candidate}
-          image={image}
-          compact={level >= 2}
-          layout={layout}
-        />
-      )
-    );
+    const certificationCount = resume.skills.certifications.length;
+    const renderCandidate = async (count: number) => {
+      const candidate = compactResume(resume, level, count);
+      const buffer = Buffer.from(
+        await renderToBuffer(
+          <ResumeDocument
+            resume={candidate}
+            image={image}
+            compact={level >= 2}
+            layout={layout}
+          />
+        )
+      );
+      return { candidate, buffer, pages: await pageCount(buffer) };
+    };
 
-    if ((await pageCount(buffer)) > 2) continue;
-    const validation = await validateResumePdf(buffer, candidate, layout);
-    return { buffer, validation, compactionLevel: level, imageIncluded: Boolean(image) };
+    const complete = await renderCandidate(certificationCount);
+    if (complete.pages <= 2) {
+      const validation = await validateResumePdf(complete.buffer, complete.candidate, layout);
+      return {
+        buffer: complete.buffer,
+        validation,
+        compactionLevel: level,
+        imageIncluded: Boolean(image),
+        certificationsIncluded: complete.candidate.skills.certifications.length,
+      };
+    }
+
+    const core = await renderCandidate(0);
+    if (core.pages > 2) continue;
+
+    let best = core;
+    let lower = 1;
+    let upper = Math.max(0, certificationCount - 1);
+    while (lower <= upper) {
+      const midpoint = Math.floor((lower + upper) / 2);
+      const attempt = await renderCandidate(midpoint);
+      if (attempt.pages <= 2) {
+        best = attempt;
+        lower = midpoint + 1;
+      } else {
+        upper = midpoint - 1;
+      }
+    }
+
+    const validation = await validateResumePdf(best.buffer, best.candidate, layout);
+    return {
+      buffer: best.buffer,
+      validation,
+      compactionLevel: level,
+      imageIncluded: Boolean(image),
+      certificationsIncluded: best.candidate.skills.certifications.length,
+    };
   }
 
   throw new Error(
