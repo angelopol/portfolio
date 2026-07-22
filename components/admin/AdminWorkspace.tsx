@@ -16,6 +16,7 @@ import {
   FiGrid,
   FiHome,
   FiImage,
+  FiLinkedin,
   FiLogOut,
   FiMove,
   FiPlus,
@@ -90,6 +91,8 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
   const [message, setMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [resolvingLogo, setResolvingLogo] = useState<string | null>(null);
+  const [linkedInCertificationsUrl, setLinkedInCertificationsUrl] = useState("");
+  const [importingLinkedInCertifications, setImportingLinkedInCertifications] = useState(false);
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
   const [openProjectIds, setOpenProjectIds] = useState<Set<string>>(
@@ -378,6 +381,62 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
     }
   }
 
+  async function importLinkedInCertifications() {
+    if (!linkedInCertificationsUrl.trim()) return;
+    setImportingLinkedInCertifications(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/certifications/linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkedInCertificationsUrl.trim() }),
+      });
+      const data = (await response.json()) as {
+        certifications?: Array<Pick<Certification, "title" | "issuer" | "issuedAt" | "credentialId" | "verificationUrl" | "organizationUrl">>;
+        error?: string;
+      };
+      if (!response.ok || !data.certifications) {
+        throw new Error(data.error ?? "No se pudieron importar las certificaciones.");
+      }
+
+      const existingKeys = new Set(
+        draft.certifications.map((item) => `${item.title}|${item.issuer}|${item.credentialId ?? ""}`.toLowerCase())
+      );
+      const imported = data.certifications
+        .filter((item) => {
+          const key = `${item.title}|${item.issuer}|${item.credentialId ?? ""}`.toLowerCase();
+          if (existingKeys.has(key)) return false;
+          existingKeys.add(key);
+          return true;
+        })
+        .map((item, index): Certification => ({
+          id: `linkedin-${slugify(item.title) || "certification"}-${Date.now()}-${index}`,
+          title: item.title,
+          issuer: item.issuer,
+          issuedAt: item.issuedAt,
+          credentialId: item.credentialId,
+          description: "",
+          certificateUrl: "",
+          verificationUrl: item.verificationUrl,
+          organizationUrl: item.organizationUrl,
+          logoUrl: "",
+        }));
+
+      if (imported.length === 0) {
+        setMessage("No hay certificados nuevos para importar; los encontrados ya existen.");
+        return;
+      }
+
+      commit({ ...draft, certifications: [...draft.certifications, ...imported] });
+      setMessage(`${imported.length} certificado${imported.length === 1 ? " importado" : "s importados"} desde LinkedIn. Ya puedes revisar y editar sus datos.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudieron importar las certificaciones.");
+    } finally {
+      setImportingLinkedInCertifications(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] text-white">
       <div className="mx-auto grid min-h-screen max-w-[1600px] lg:grid-cols-[280px_1fr]">
@@ -612,6 +671,33 @@ export function AdminWorkspace({ initialContent, section }: { initialContent: Si
           {section === "certifications" && (
             <section>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><PageHeading eyebrow="Skills & Certifications" title="Certificaciones verificables" description="Gestiona el slider de la landing. Cada tarjeta puede abrir el documento de referencia y enlazar a la validación oficial." /><button type="button" onClick={addCertification} className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold"><FiPlus /> Nueva certificación</button></div>
+              <div className="mb-7 rounded-3xl border border-[#0a66c2]/35 bg-[#0a66c2]/10 p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <span className="rounded-2xl bg-[#0a66c2] p-3 text-xl text-white"><FiLinkedin /></span>
+                  <div>
+                    <h2 className="font-display text-xl font-semibold">Importar desde LinkedIn</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">Lee la sección pública de licencias y certificaciones, descarta duplicados y crea certificados editables en este gestor.</p>
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+                  <input
+                    type="url"
+                    className={fieldClass}
+                    value={linkedInCertificationsUrl}
+                    onChange={(event) => setLinkedInCertificationsUrl(event.target.value)}
+                    placeholder="https://www.linkedin.com/in/usuario/details/certifications/"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void importLinkedInCertifications()}
+                    disabled={!linkedInCertificationsUrl.trim() || importingLinkedInCertifications}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0a66c2] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#07569f] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FiLinkedin /> {importingLinkedInCertifications ? "Importando..." : "Importar certificados"}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-slate-500">LinkedIn puede bloquear solicitudes automatizadas o exigir iniciar sesión. La importación solo funciona cuando esa sección está disponible públicamente.</p>
+              </div>
               {draft.certifications.length === 0 ? <div className="glass-panel border border-dashed border-white/15 p-12 text-center"><FiAward className="mx-auto text-4xl text-[var(--color-accent-soft)]" /><h2 className="mt-4 font-display text-xl font-semibold">Aún no hay certificaciones</h2><p className="mt-2 text-sm text-slate-500">Añade la primera para activar el slider en la landing.</p></div> : <div className="space-y-6">{draft.certifications.map((certification, index) => <details key={certification.id} open={index === 0} className="glass-panel border border-white/10 p-6"><summary className="flex cursor-pointer list-none items-center gap-4"><div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white text-sm font-bold text-slate-800">{certification.logoUrl ? <img src={certification.logoUrl} alt="" className="h-full w-full object-contain p-1" /> : certification.issuer.slice(0, 2).toUpperCase() || <FiAward />}</div><div className="min-w-0 flex-1"><h2 className="truncate font-display text-xl font-semibold">{certification.title}</h2><p className="mt-1 truncate text-sm text-slate-500">{certification.issuer || "Emisor pendiente"}</p></div><span className="text-xs uppercase tracking-[0.18em] text-slate-500">Editar</span></summary><div className="mt-6 grid gap-5 border-t border-white/10 pt-6 lg:grid-cols-2"><Field label="Título"><input className={fieldClass} value={certification.title} onChange={(event) => updateCertification(certification.id, { title: event.target.value })} /></Field><Field label="Emisor"><input className={fieldClass} value={certification.issuer} onChange={(event) => updateCertification(certification.id, { issuer: event.target.value })} /></Field><Field label="Fecha de emisión"><input className={fieldClass} placeholder="Ej. Marzo 2026" value={certification.issuedAt ?? ""} onChange={(event) => updateCertification(certification.id, { issuedAt: event.target.value })} /></Field><Field label="ID de credencial"><input className={fieldClass} value={certification.credentialId ?? ""} onChange={(event) => updateCertification(certification.id, { credentialId: event.target.value })} /></Field><div className="lg:col-span-2"><Field label="Descripción"><textarea className={`${fieldClass} min-h-28`} value={certification.description} onChange={(event) => updateCertification(certification.id, { description: event.target.value })} /></Field></div><Field label="URL de verificación"><input type="url" className={fieldClass} value={certification.verificationUrl} onChange={(event) => updateCertification(certification.id, { verificationUrl: event.target.value })} /></Field><Field label="PDF o imagen del certificado"><input className={fieldClass} value={certification.certificateUrl} onChange={(event) => updateCertification(certification.id, { certificateUrl: event.target.value })} /></Field><div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-950/35 p-5"><div className="grid items-end gap-4 lg:grid-cols-[1fr_auto]"><Field label="Empresa o escuela en LinkedIn"><input type="url" className={fieldClass} placeholder="https://www.linkedin.com/company/..." value={certification.organizationUrl} onChange={(event) => updateCertification(certification.id, { organizationUrl: event.target.value })} /></Field><button type="button" onClick={() => void resolveLinkedInLogo(certification)} disabled={resolvingLogo === certification.id} className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/10 disabled:opacity-50">{resolvingLogo === certification.id ? "Buscando..." : "Obtener logo"}</button></div><div className="mt-4 grid items-end gap-4 lg:grid-cols-[1fr_auto]"><Field label="URL del logo · también puedes ajustarla manualmente"><input className={fieldClass} value={certification.logoUrl ?? ""} onChange={(event) => updateCertification(certification.id, { logoUrl: event.target.value })} /></Field>{certification.logoUrl && <img src={certification.logoUrl} alt={`Logo ${certification.issuer}`} className="h-14 w-14 rounded-xl bg-white object-contain p-1" />}</div><p className="mt-3 text-xs leading-5 text-slate-500">LinkedIn puede limitar la lectura automática. Si ocurre, pega una URL pública del logo en el campo anterior.</p></div><div className="flex flex-wrap gap-3 lg:col-span-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/5"><FiFileText /> {uploading === certification.id ? "Subiendo..." : "Subir certificado"}<input type="file" accept="application/pdf,image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; const url = await uploadAsset(file, file.type === "application/pdf" ? "document" : "image", certification.id); if (url) updateCertification(certification.id, { certificateUrl: url }); }} /></label><button type="button" onClick={() => { if (window.confirm(`¿Eliminar ${certification.title}?`)) commit({ ...draft, certifications: draft.certifications.filter((item) => item.id !== certification.id) }); }} className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 hover:bg-rose-500/10"><FiTrash2 /> Eliminar</button></div></div></details>)}</div>}
             </section>
           )}
