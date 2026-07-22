@@ -159,10 +159,10 @@ function compactResume(
   }
 
   const limits = {
-    1: { summary: 720, experiences: 6, experienceSummary: 250, highlights: 3, highlight: 150, education: 3, educationDescription: 180, technical: 24, soft: 8, languages: 6 },
-    2: { summary: 560, experiences: 6, experienceSummary: 180, highlights: 3, highlight: 125, education: 3, educationDescription: 130, technical: 22, soft: 7, languages: 5 },
-    3: { summary: 420, experiences: 6, experienceSummary: 120, highlights: 2, highlight: 110, education: 3, educationDescription: 100, technical: 18, soft: 6, languages: 4 },
-    4: { summary: 330, experiences: 5, experienceSummary: 80, highlights: 2, highlight: 85, education: 2, educationDescription: 70, technical: 15, soft: 5, languages: 4 },
+    1: { summary: 720, experiences: 6, experienceSummary: 900, highlights: 4, highlight: 180, education: 4, educationDescription: 180, technical: 28, soft: 10, languages: 8 },
+    2: { summary: 600, experiences: 6, experienceSummary: 650, highlights: 3, highlight: 160, education: 4, educationDescription: 150, technical: 25, soft: 8, languages: 6 },
+    3: { summary: 480, experiences: 6, experienceSummary: 430, highlights: 3, highlight: 130, education: 3, educationDescription: 110, technical: 21, soft: 7, languages: 5 },
+    4: { summary: 360, experiences: 5, experienceSummary: 260, highlights: 2, highlight: 105, education: 3, educationDescription: 80, technical: 17, soft: 5, languages: 4 },
   }[level];
 
   return {
@@ -609,8 +609,14 @@ export async function renderResumePdf(
       return { candidate, buffer, pages: await pageCount(buffer) };
     };
 
+    const core = await renderCandidate(0);
+    if (core.pages > 2) continue;
+
+    // Preserve the smallest page count required by the essential resume content.
+    // Certifications fill remaining room but never force a one-page CV onto page two.
+    const targetPages = core.pages === 1 ? 1 : 2;
     const complete = await renderCandidate(certificationCount);
-    if (complete.pages <= 2) {
+    if (complete.pages <= targetPages) {
       const validation = await validateResumePdf(complete.buffer, complete.candidate, layout);
       return {
         buffer: complete.buffer,
@@ -621,16 +627,13 @@ export async function renderResumePdf(
       };
     }
 
-    const core = await renderCandidate(0);
-    if (core.pages > 2) continue;
-
     let best = core;
     let lower = 1;
     let upper = Math.max(0, certificationCount - 1);
     while (lower <= upper) {
       const midpoint = Math.floor((lower + upper) / 2);
       const attempt = await renderCandidate(midpoint);
-      if (attempt.pages <= 2) {
+      if (attempt.pages <= targetPages) {
         best = attempt;
         lower = midpoint + 1;
       } else {

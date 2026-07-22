@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { FiCheckCircle, FiCpu, FiDownload, FiFileText, FiImage, FiRefreshCw, FiShield, FiUser } from "react-icons/fi";
 
 import type { SiteContent } from "@/types/site";
-import type { ResumeGenerationRequest, ResumeLanguage, ResumeLayout } from "@/types/resume";
+import type {
+  ResumeExperienceDetail,
+  ResumeGenerationRequest,
+  ResumeLanguage,
+  ResumeLayout,
+} from "@/types/resume";
 
 const fieldClass =
   "w-full rounded-2xl border border-white/10 bg-slate-950/65 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--color-accent)]";
@@ -41,6 +46,7 @@ export function ResumeBuilder({
 }) {
   const [language, setLanguage] = useState<ResumeLanguage>("en");
   const [layout, setLayout] = useState<ResumeLayout>("ats");
+  const [experienceDetail, setExperienceDetail] = useState<ResumeExperienceDetail>("explanatory");
   const [softSkillsInput, setSoftSkillsInput] = useState(() => content.resume.softSkills.join("\n"));
   const [languagesInput, setLanguagesInput] = useState(() => content.resume.languages.join("\n"));
   const [profileImageUrl, setProfileImageUrl] = useState("");
@@ -108,6 +114,7 @@ export function ResumeBuilder({
     const request: ResumeGenerationRequest & { content: SiteContent } = {
       language,
       layout,
+      experienceDetail,
       profileImageUrl: profileImageUrl || undefined,
       targetRole,
       jobDescription,
@@ -260,6 +267,33 @@ export function ResumeBuilder({
             <Field label="Idioma del documento">
               <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/50 p-1.5">
                 {(["es", "en"] as const).map((option) => <button key={option} type="button" onClick={() => setLanguage(option)} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${language === option ? "bg-[var(--color-accent)] text-white" : "text-slate-400 hover:bg-white/5"}`}>{option === "es" ? "Español" : "English"}</button>)}
+              </div>
+            </Field>
+            <Field
+              label="Detalle de la experiencia laboral"
+              hint="La maquetación conserva primero la experiencia: intenta una página y, si no cabe, completa un CV de dos páginas."
+            >
+              <div className="grid gap-2 rounded-2xl border border-white/10 bg-slate-950/50 p-1.5 sm:grid-cols-3">
+                {([
+                  { value: "concise", title: "Conciso", description: "4–6 líneas aprox." },
+                  { value: "explanatory", title: "Explicativo", description: "7–10 líneas aprox." },
+                  { value: "detailed", title: "Detallado", description: "11–14 líneas aprox." },
+                ] as const).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={experienceDetail === option.value}
+                    onClick={() => setExperienceDetail(option.value)}
+                    className={`rounded-xl px-3 py-3 text-left transition ${
+                      experienceDetail === option.value
+                        ? "bg-[var(--color-accent)] text-white"
+                        : "text-slate-400 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold">{option.title}</span>
+                    <span className="mt-1 block text-[11px] leading-4 opacity-75">{option.description}</span>
+                  </button>
+                ))}
               </div>
             </Field>
             <Field label="Cargo objetivo" hint="Ejemplo: Senior Backend Developer"><input className={fieldClass} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} /></Field>

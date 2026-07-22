@@ -104,6 +104,35 @@ async function verifyAdaptiveCertifications() {
   };
 }
 
+async function verifySinglePagePreference() {
+  const singlePageResume: GeneratedResume = {
+    ...resume,
+    experience: resume.experience.slice(0, 1),
+    education: resume.education.slice(0, 1),
+    skills: {
+      ...resume.skills,
+      technical: resume.skills.technical.slice(0, 10),
+      certifications: Array.from({ length: 80 }, (_, index) => ({
+        title: `Single Page Certificate ${index + 1}`,
+        issuer: "Verified Certification Provider",
+        issuedAt: `${2001 + index}`,
+        verificationUrl: `https://example.com/single-page-certificate-${index + 1}`,
+      })),
+    },
+  };
+  const rendered = await renderResumePdf(singlePageResume, "/assets/profile.jpeg", "ats");
+  if (rendered.validation.pages !== 1) {
+    throw new Error(`El CV breve ocupó ${rendered.validation.pages} páginas en vez de 1.`);
+  }
+  return {
+    layout: "ats-single-page-preference",
+    pages: rendered.validation.pages,
+    certificationsAvailable: singlePageResume.skills.certifications.length,
+    certificationsIncluded: rendered.certificationsIncluded,
+    compactionLevel: rendered.compactionLevel,
+  };
+}
+
 async function main() {
   const spanishResume: GeneratedResume = {
     ...resume,
@@ -126,6 +155,7 @@ async function main() {
     verify("visual"),
     spanishAts,
     verifyAdaptiveCertifications(),
+    verifySinglePagePreference(),
   ]);
   console.log(JSON.stringify(results, null, 2));
 }

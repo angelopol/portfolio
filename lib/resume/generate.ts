@@ -8,6 +8,7 @@ import type {
   GeneratedResumeCertification,
   GeneratedResumeEducation,
   GeneratedResumeExperience,
+  ResumeExperienceDetail,
   ResumeGenerationRequest,
 } from "@/types/resume";
 
@@ -61,6 +62,48 @@ const responseSchema = {
   },
   required: ["language", "professionalTitle", "summary", "experience", "education", "skills"],
 };
+
+const experienceDetailConfig: Record<ResumeExperienceDetail, {
+  label: string;
+  lineTarget: string;
+  wordTarget: string;
+  summaryMaxLength: number;
+  highlightLimit: number;
+  highlightMaxLength: number;
+  totalWordBudget: number;
+}> = {
+  concise: {
+    label: "concise",
+    lineTarget: "approximately 4-6 rendered lines",
+    wordTarget: "roughly 45-70 words",
+    summaryMaxLength: 520,
+    highlightLimit: 2,
+    highlightMaxLength: 160,
+    totalWordBudget: 700,
+  },
+  explanatory: {
+    label: "explanatory",
+    lineTarget: "approximately 7-10 rendered lines",
+    wordTarget: "roughly 75-115 words",
+    summaryMaxLength: 850,
+    highlightLimit: 3,
+    highlightMaxLength: 180,
+    totalWordBudget: 950,
+  },
+  detailed: {
+    label: "detailed",
+    lineTarget: "approximately 11-14 rendered lines",
+    wordTarget: "roughly 120-170 words",
+    summaryMaxLength: 1250,
+    highlightLimit: 4,
+    highlightMaxLength: 200,
+    totalWordBudget: 1250,
+  },
+};
+
+function getExperienceDetail(request: ResumeGenerationRequest) {
+  return experienceDetailConfig[request.experienceDetail ?? "explanatory"];
+}
 
 function text(value: unknown, fallback = "", maxLength = 600) {
   const candidate = typeof value === "string" ? value.trim() : "";
@@ -128,14 +171,18 @@ function inferredSoftSkills(value: unknown, request: ResumeGenerationRequest) {
   return inferred.slice(0, 5);
 }
 
-function fallbackExperience(content: SiteContent): GeneratedResumeExperience[] {
+function fallbackExperience(
+  content: SiteContent,
+  request: ResumeGenerationRequest
+): GeneratedResumeExperience[] {
+  const detail = getExperienceDetail(request);
   return content.workExperience.slice(0, 6).map((entry) => ({
     title: entry.title,
     organization: entry.organization,
     location: entry.location,
     startDate: entry.startDate,
     endDate: entry.endDate,
-    summary: entry.description.slice(0, 360),
+    summary: entry.description.slice(0, detail.summaryMaxLength),
     highlights: [],
     links: entry.references.filter((reference) => /^https?:\/\//i.test(reference.url)).slice(0, 4),
   }));
@@ -243,6 +290,7 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
   const rawExperience = Array.isArray(raw.experience) ? raw.experience : [];
   const rawEducation = Array.isArray(raw.education) ? raw.education : [];
   const rawSkills = (raw.skills ?? {}) as Record<string, unknown>;
+  const detail = getExperienceDetail(request);
 
   const experience = rawExperience
     .map((item) => {
@@ -256,8 +304,12 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
         location: source.location,
         startDate: source.startDate,
         endDate: source.endDate,
-        summary: text(generated.summary, source.description, 320),
-        highlights: strings(generated.highlights, 4, 180),
+        summary: text(generated.summary, source.description, detail.summaryMaxLength),
+        highlights: strings(
+          generated.highlights,
+          detail.highlightLimit,
+          detail.highlightMaxLength
+        ),
         links: source.references.filter((reference) => /^https?:\/\//i.test(reference.url)).slice(0, 4),
       } satisfies GeneratedResumeExperience;
     })
@@ -309,7 +361,7 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
       linkedinUrl: content.contact.linkedinUrl,
       githubUrl: content.contact.githubUrl,
     },
-    experience: experience.length ? experience : fallbackExperience(content),
+    experience: experience.length ? experience : fallbackExperience(content, request),
     education: education.length ? education : fallbackEducation(content),
     skills: {
       technical: technical.length ? technical : technicalSource.slice(0, 28),
@@ -331,6 +383,7 @@ export async function generateResumeContent(
   const content = localizeSiteContent(sourceContent, request.language);
   const languageName = request.language === "es" ? "Spanish" : "English";
   const layoutName = request.layout === "visual" ? "classic visual resume" : "strict single-column ATS resume";
+  const detail = getExperienceDetail(request);
   const prompt = `You are an expert technical resume writer. Create a concise, ATS-friendly ${layoutName} in ${languageName} from the complete portfolio JSON below.
 
 Hard rules:
@@ -343,10 +396,11 @@ Hard rules:
 - For technical and language skills, copy exact values from the JSON arrays. Do not create synonyms.
 - For soft skills, copy exact values when resume.softSkills contains entries. Only when that array is empty, infer 3-5 concise soft skills that match the target role and job description.
 - The final document must fit in no more than 2 pages using a dense classic resume template.
-- Keep the complete result below approximately 650 words and order selected records by relevance, with recent experience favored when relevance is equal.
+- Experience detail mode is ${detail.label}. For every selected experience, write a substantial summary paragraph of ${detail.lineTarget} (${detail.wordTarget}) whenever the verified source contains enough material. Develop the responsibilities, technologies, context, and impact already present in the source; never pad it with invented facts.
+- Keep the complete result below approximately ${detail.totalWordBudget} words and order selected records by relevance, with recent experience favored when relevance is equal.
 - Use conventional ATS language and natural keywords from the job description only when the portfolio facts support them. Never keyword-stuff.
 - Keep the summary under 100 words.
-- Select at most 6 experience entries. Write a short summary and 2-4 achievement-oriented highlights, each under 24 words.
+- Select at most 6 experience entries. Add up to ${detail.highlightLimit} concise achievement-oriented highlights per experience, without repeating the summary paragraph.
 - Select at most 4 education entries, 28 technical skills, all relevant certification IDs, 10 soft skills, and 8 languages. Rank certificationIds by relevance; the server decides how many fit.
 - Tailor emphasis to the target role or job description when supplied, without fabricating facts.
 

@@ -2,6 +2,8 @@ export type ResumeLanguage = "en" | "es";
 
 export type ResumeLayout = "ats" | "visual";
 
+export type ResumeExperienceDetail = "concise" | "explanatory" | "detailed";
+
 export type GeneratedResumeLink = {
   label: string;
   url: string;
@@ -61,6 +63,7 @@ export type GeneratedResume = {
 export type ResumeGenerationRequest = {
   language: ResumeLanguage;
   layout?: ResumeLayout;
+  experienceDetail?: ResumeExperienceDetail;
   profileImageUrl?: string;
   targetRole?: string;
   jobDescription?: string;

@@ -74,9 +74,14 @@ export async function POST(request: Request) {
   try {
     const payload = await readPayload(request);
     const layout = payload.layout === "visual" ? "visual" : "ats";
+    const experienceDetail = payload.experienceDetail === "concise" ||
+      payload.experienceDetail === "detailed"
+      ? payload.experienceDetail
+      : "explanatory";
     const generationRequest: ResumeGenerationRequest = {
       language: payload.language === "es" ? "es" : "en",
       layout,
+      experienceDetail,
       profileImageUrl: optionalText(payload.profileImageUrl, 2048),
       targetRole: optionalText(payload.targetRole, 240),
       jobDescription: optionalText(payload.jobDescription, 6000),
@@ -109,6 +114,7 @@ export async function POST(request: Request) {
         "X-Content-Type-Options": "nosniff",
         "X-Resume-Model": model,
         "X-Resume-Layout": layout,
+        "X-Resume-Experience-Detail": experienceDetail,
         "X-Resume-ATS": layout === "ats" ? "strict-passed" : "text-layer-passed",
         "X-Resume-Pages": String(rendered.validation.pages),
         "X-Resume-Compaction": String(rendered.compactionLevel),
