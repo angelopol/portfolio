@@ -39,6 +39,18 @@ function optionalCertificationLimit(value: unknown) {
   return candidate;
 }
 
+function optionalExperienceIds(value: unknown) {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value)) {
+    throw new BadRequestError("La selección de experiencias no tiene un formato válido.");
+  }
+  return Array.from(new Set(
+    value.filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim().slice(0, 200))
+      .filter(Boolean),
+  )).slice(0, 6);
+}
+
 function resumeSections(value: unknown) {
   const source = isRecord(value) ? value : {};
   return {
@@ -154,6 +166,7 @@ export async function POST(request: Request) {
       language: payload.language === "es" ? "es" : "en",
       layout,
       experienceDetail,
+      experienceIds: optionalExperienceIds(payload.experienceIds),
       certificationLimit: optionalCertificationLimit(payload.certificationLimit),
       sections: resumeSections(payload.sections),
       compactSpacing: payload.compactSpacing === true,

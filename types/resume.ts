@@ -80,6 +80,7 @@ export type ResumeGenerationRequest = {
   language: ResumeLanguage;
   layout?: ResumeLayout;
   experienceDetail?: ResumeExperienceDetail;
+  experienceIds?: string[];
   certificationLimit?: number;
   sections?: Partial<ResumeSections>;
   compactSpacing?: boolean;

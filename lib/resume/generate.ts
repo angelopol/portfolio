@@ -181,12 +181,12 @@ function inferredSoftSkills(value: unknown, request: ResumeGenerationRequest) {
   return inferred.slice(0, 5);
 }
 
-function fallbackExperience(
-  content: SiteContent,
-  request: ResumeGenerationRequest
-): GeneratedResumeExperience[] {
+function fallbackExperienceEntry(
+  entry: SiteContent["workExperience"][number],
+  request: ResumeGenerationRequest,
+): GeneratedResumeExperience {
   const detail = getExperienceDetail(request);
-  return content.workExperience.slice(0, 6).map((entry) => ({
+  return {
     title: entry.title,
     organization: entry.organization,
     location: entry.location,
@@ -195,7 +195,14 @@ function fallbackExperience(
     summary: entry.description.slice(0, detail.summaryMaxLength),
     highlights: [],
     links: entry.references.filter((reference) => /^https?:\/\//i.test(reference.url)).slice(0, 4),
-  }));
+  };
+}
+
+function fallbackExperience(
+  content: SiteContent,
+  request: ResumeGenerationRequest
+): GeneratedResumeExperience[] {
+  return content.workExperience.slice(0, 6).map((entry) => fallbackExperienceEntry(entry, request));
 }
 
 function fallbackEducation(content: SiteContent): GeneratedResumeEducation[] {
@@ -300,29 +307,45 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
   const detail = getExperienceDetail(request);
   const sections = getSections(request);
 
-  const experience = rawExperience
+  const generatedExperience = rawExperience
     .map((item) => {
       const generated = item as Record<string, unknown>;
-      const source = content.workExperience.find((entry) => entry.id === text(generated.sourceId, "", 200));
+      const sourceId = text(generated.sourceId, "", 200);
+      const source = content.workExperience.find((entry) => entry.id === sourceId);
       if (!source) return null;
 
       return {
-        title: source.title,
-        organization: source.organization,
-        location: source.location,
-        startDate: source.startDate,
-        endDate: source.endDate,
-        summary: text(generated.summary, source.description, detail.summaryMaxLength),
-        highlights: strings(
-          generated.highlights,
-          detail.highlightLimit,
-          detail.highlightMaxLength
-        ),
-        links: source.references.filter((reference) => /^https?:\/\//i.test(reference.url)).slice(0, 4),
-      } satisfies GeneratedResumeExperience;
+        sourceId,
+        resume: {
+          title: source.title,
+          organization: source.organization,
+          location: source.location,
+          startDate: source.startDate,
+          endDate: source.endDate,
+          summary: text(generated.summary, source.description, detail.summaryMaxLength),
+          highlights: strings(
+            generated.highlights,
+            detail.highlightLimit,
+            detail.highlightMaxLength
+          ),
+          links: source.references.filter((reference) => /^https?:\/\//i.test(reference.url)).slice(0, 4),
+        } satisfies GeneratedResumeExperience,
+      };
     })
-    .filter((entry): entry is GeneratedResumeExperience => Boolean(entry))
-    .slice(0, 6);
+    .filter((entry): entry is { sourceId: string; resume: GeneratedResumeExperience } => Boolean(entry));
+
+  const generatedExperienceById = new Map(
+    generatedExperience.map((entry) => [entry.sourceId, entry.resume])
+  );
+  const manuallySelectedIds = Array.isArray(request.experienceIds)
+    ? new Set(request.experienceIds)
+    : null;
+  const experience = manuallySelectedIds
+    ? content.workExperience
+        .filter((entry) => manuallySelectedIds.has(entry.id))
+        .slice(0, 6)
+        .map((entry) => generatedExperienceById.get(entry.id) ?? fallbackExperienceEntry(entry, request))
+    : generatedExperience.map((entry) => entry.resume).slice(0, 6);
 
   const selectedEducationIds = new Set<string>();
   const selectedEducationKeys = new Set<string>();
@@ -370,7 +393,7 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
       githubUrl: content.contact.githubUrl,
     },
     experience: sections.experience
-      ? (experience.length ? experience : fallbackExperience(content, request))
+      ? (manuallySelectedIds ? experience : (experience.length ? experience : fallbackExperience(content, request)))
       : [],
     education: sections.education
       ? (education.length ? education : fallbackEducation(content))
@@ -410,6 +433,12 @@ export async function generateResumeContent(
     .map(([name]) => name)
     .join(", ");
   const certificationLimit = request.certificationLimit ?? null;
+  const manuallySelectedExperienceIds = Array.isArray(request.experienceIds)
+    ? content.workExperience
+        .filter((entry) => request.experienceIds?.includes(entry.id))
+        .slice(0, 6)
+        .map((entry) => entry.id)
+    : null;
   const promptContent = {
     ...content,
     certifications: content.certifications.map((certification, index) => ({
@@ -436,7 +465,11 @@ Hard rules:
 - Keep the complete result below approximately ${detail.totalWordBudget} words and order selected records by relevance, with recent experience favored when relevance is equal.
 - Use conventional ATS language and natural keywords from the job description only when the portfolio facts support them. Never keyword-stuff.
 - Keep the summary under 100 words.
-- Select at most 6 experience entries. Add up to ${detail.highlightLimit} concise achievement-oriented highlights per experience, without repeating the summary paragraph.
+- ${manuallySelectedExperienceIds === null
+    ? "Select at most 6 experience entries."
+    : sections.experience
+      ? `Return exactly these experience sourceIds and no others: ${JSON.stringify(manuallySelectedExperienceIds)}.`
+      : "Return an empty experience array because the section is disabled."} Add up to ${detail.highlightLimit} concise achievement-oriented highlights per experience, without repeating the summary paragraph.
 - Select at most 4 education entries, 28 technical skills, all relevant and permitted certification IDs, 10 soft skills, and 8 languages. Follow explicit topical inclusion and exclusion preferences from additional instructions when selecting certificationIds. Rank the remaining IDs by relevance; the server decides how many fit.
 - Include only these enabled sections: ${includedSections}. For every disabled section, return an empty string or empty array in its corresponding response field. Contact identity and professional title always remain enabled.
 - Tailor emphasis to the target role or job description when supplied, without fabricating facts.
@@ -445,6 +478,7 @@ Hard rules:
 <job_description>${text(request.jobDescription, "Not supplied", 6000)}</job_description>
 <additional_instructions>${text(request.additionalInstructions, "None", 2000)}</additional_instructions>
 <certification_limit>${certificationLimit ?? "AI decides"}</certification_limit>
+<selected_experience_ids>${manuallySelectedExperienceIds === null ? "AI decides" : JSON.stringify(manuallySelectedExperienceIds)}</selected_experience_ids>
 <enabled_sections>${includedSections}</enabled_sections>
 
 <portfolio_json>

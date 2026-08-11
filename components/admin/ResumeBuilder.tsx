@@ -51,6 +51,10 @@ export function ResumeBuilder({
   const [language, setLanguage] = useState<ResumeLanguage>("en");
   const [layout, setLayout] = useState<ResumeLayout>("ats");
   const [experienceDetail, setExperienceDetail] = useState<ResumeExperienceDetail>("explanatory");
+  const [selectExperiencesManually, setSelectExperiencesManually] = useState(false);
+  const [selectedExperienceIds, setSelectedExperienceIds] = useState<string[]>(() =>
+    content.workExperience.slice(0, 6).map((entry) => entry.id)
+  );
   const [sections, setSections] = useState<ResumeSections>({ ...DEFAULT_RESUME_SECTIONS });
   const [limitCertifications, setLimitCertifications] = useState(false);
   const [certificationLimit, setCertificationLimit] = useState(10);
@@ -108,6 +112,11 @@ export function ResumeBuilder({
     );
   }, [content.resume.languages]);
 
+  useEffect(() => {
+    const availableIds = new Set(content.workExperience.map((entry) => entry.id));
+    setSelectedExperienceIds((current) => current.filter((id) => availableIds.has(id)).slice(0, 6));
+  }, [content.workExperience]);
+
   function updateResume(patch: Partial<SiteContent["resume"]>) {
     onChange({ ...content, resume: { ...content.resume, ...patch } });
   }
@@ -121,6 +130,9 @@ export function ResumeBuilder({
       language,
       layout,
       experienceDetail,
+      experienceIds: selectExperiencesManually && sections.experience
+        ? selectedExperienceIds
+        : undefined,
       certificationLimit: limitCertifications && sections.certifications
         ? certificationLimit
         : undefined,
@@ -349,6 +361,61 @@ export function ResumeBuilder({
                     <span className="mt-1 block text-[11px] leading-4 opacity-75">{option.description}</span>
                   </button>
                 ))}
+              </div>
+            </Field>
+            <Field
+              label="Experiencias incluidas · opcional"
+              hint={selectExperiencesManually
+                ? `Se incluirán exactamente las experiencias marcadas (${selectedExperienceIds.length}/6).`
+                : "Selección automática activa: Gemini decidirá cuáles experiencias son más relevantes."}
+            >
+              <div className={`rounded-2xl border border-white/10 bg-slate-950/35 p-4 ${sections.experience ? "" : "opacity-50"}`}>
+                <label className="flex cursor-pointer items-center justify-between gap-4 text-sm font-semibold text-slate-300">
+                  <span>Elegir experiencias manualmente</span>
+                  <input
+                    type="checkbox"
+                    checked={selectExperiencesManually}
+                    disabled={!sections.experience}
+                    onChange={(event) => setSelectExperiencesManually(event.target.checked)}
+                    className="h-4 w-4 accent-[var(--color-accent)]"
+                  />
+                </label>
+                {selectExperiencesManually && sections.experience ? (
+                  <div className="mt-4 grid gap-2">
+                    {content.workExperience.length ? content.workExperience.map((entry) => {
+                      const checked = selectedExperienceIds.includes(entry.id);
+                      const limitReached = selectedExperienceIds.length >= 6 && !checked;
+                      return (
+                        <label
+                          key={entry.id}
+                          className={`flex items-start gap-3 rounded-xl border border-white/10 px-3 py-3 transition ${limitReached ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:bg-white/5"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={limitReached}
+                            onChange={(event) => {
+                              setSelectedExperienceIds((current) => event.target.checked
+                                ? [...current, entry.id].slice(0, 6)
+                                : current.filter((id) => id !== entry.id));
+                            }}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-white">{entry.title}</span>
+                            <span className="mt-1 block text-xs leading-5 text-slate-500">
+                              {entry.organization}{entry.startDate || entry.endDate ? ` · ${entry.startDate || "—"} — ${entry.endDate || "Actualidad"}` : ""}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    }) : (
+                      <p className="rounded-xl border border-dashed border-white/10 px-3 py-4 text-sm text-slate-500">
+                        No hay experiencias laborales disponibles.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </Field>
             <Field label="Secciones incluidas" hint="Todas están activas por defecto. Los datos de identidad y contacto siempre se conservan.">
