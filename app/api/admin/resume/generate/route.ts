@@ -50,12 +50,37 @@ function resumeSections(value: unknown) {
   } satisfies typeof DEFAULT_RESUME_SECTIONS;
 }
 
+function withoutBlankLines(value: string) {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+function compactResumeText(resume: GeneratedResume): GeneratedResume {
+  return {
+    ...resume,
+    summary: withoutBlankLines(resume.summary),
+    experience: resume.experience.map((entry) => ({
+      ...entry,
+      summary: withoutBlankLines(entry.summary),
+      highlights: entry.highlights.map(withoutBlankLines).filter(Boolean),
+    })),
+    education: resume.education.map((entry) => ({
+      ...entry,
+      description: withoutBlankLines(entry.description),
+    })),
+  };
+}
+
 function applyGenerationOptions(
   resume: GeneratedResume,
   request: ResumeGenerationRequest,
 ): GeneratedResume {
   const sections = { ...DEFAULT_RESUME_SECTIONS, ...request.sections };
-  return {
+  const nextResume: GeneratedResume = {
     ...resume,
     summary: sections.summary ? resume.summary : "",
     experience: sections.experience ? resume.experience : [],
@@ -69,6 +94,7 @@ function applyGenerationOptions(
         : [],
     },
   };
+  return request.compactSpacing ? compactResumeText(nextResume) : nextResume;
 }
 
 function assertSiteContent(value: unknown): asserts value is SiteContent {
@@ -130,6 +156,7 @@ export async function POST(request: Request) {
       experienceDetail,
       certificationLimit: optionalCertificationLimit(payload.certificationLimit),
       sections: resumeSections(payload.sections),
+      compactSpacing: payload.compactSpacing === true,
       profileImageUrl: optionalText(payload.profileImageUrl, 2048),
       targetRole: optionalText(payload.targetRole, 240),
       jobDescription: optionalText(payload.jobDescription, 6000),
@@ -166,12 +193,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const { resume, model } = generated;
+    const resume = applyGenerationOptions(generated.resume, generationRequest);
+    const { model } = generated;
     const rendered = await renderResumePdf(
       resume,
       content.about.profileImage,
       layout,
-      generationRequest.profileImageUrl
+      generationRequest.profileImageUrl,
+      generationRequest.compactSpacing,
     );
     const fileName = `${safeFileName(resume.fullName) || "resume"}-${generationRequest.language}-${layout}.pdf`;
 

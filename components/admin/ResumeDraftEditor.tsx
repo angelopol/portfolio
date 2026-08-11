@@ -16,6 +16,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="block"><span className={labelClass}>{label}</span>{children}</label>;
 }
 
+function DeleteButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/10"
+    >
+      <FiTrash2 /> {label}
+    </button>
+  );
+}
+
 function lineValues(value: string) {
   return value.split("\n");
 }
@@ -25,11 +37,15 @@ export function ResumeDraftEditor({
   onChange,
   onRender,
   rendering,
+  compactSpacing,
+  onCompactSpacingChange,
 }: {
   draft: GeneratedResume;
   onChange: (draft: GeneratedResume) => void;
   onRender: () => void;
   rendering: boolean;
+  compactSpacing: boolean;
+  onCompactSpacingChange: (compact: boolean) => void;
 }) {
   function updateExperience(index: number, patch: Partial<GeneratedResumeExperience>) {
     onChange({
@@ -49,6 +65,10 @@ export function ResumeDraftEditor({
     });
   }
 
+  const hasSkills = Boolean(
+    draft.skills.technical.length || draft.skills.soft.length || draft.skills.languages.length
+  );
+
   return (
     <div className="glass-panel border border-white/10 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -66,6 +86,19 @@ export function ResumeDraftEditor({
           {rendering ? "Actualizando..." : "Aplicar cambios al PDF"}
         </button>
       </div>
+
+      <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+        <input
+          type="checkbox"
+          checked={compactSpacing}
+          onChange={(event) => onCompactSpacingChange(event.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-white">Compactar espacios en blanco</span>
+          <span className="mt-1 block text-xs leading-5 text-slate-500">Elimina líneas vacías del texto y reduce márgenes, interlineado y separación entre elementos al actualizar el PDF.</span>
+        </span>
+      </label>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Nombre completo">
@@ -103,10 +136,22 @@ export function ResumeDraftEditor({
       {draft.experience.length > 0 && (
         <details open className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
           <summary className="cursor-pointer text-sm font-semibold text-white">Experiencia laboral · {draft.experience.length}</summary>
+          <div className="mt-4 flex justify-end">
+            <DeleteButton label="Eliminar experiencia completa" onClick={() => onChange({ ...draft, experience: [] })} />
+          </div>
           <div className="mt-4 space-y-4">
             {draft.experience.map((entry, index) => (
               <details key={`${entry.organization}-${index}`} className="rounded-xl border border-white/10 p-3">
                 <summary className="cursor-pointer text-sm font-semibold text-slate-200">{entry.organization || entry.title}</summary>
+                <div className="mt-3 flex justify-end">
+                  <DeleteButton
+                    label="Eliminar esta experiencia"
+                    onClick={() => onChange({
+                      ...draft,
+                      experience: draft.experience.filter((_, entryIndex) => entryIndex !== index),
+                    })}
+                  />
+                </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <Field label="Cargo"><input className={inputClass} value={entry.title} onChange={(event) => updateExperience(index, { title: event.target.value })} /></Field>
                   <Field label="Empresa"><input className={inputClass} value={entry.organization} onChange={(event) => updateExperience(index, { organization: event.target.value })} /></Field>
@@ -127,9 +172,21 @@ export function ResumeDraftEditor({
       {draft.education.length > 0 && (
         <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
           <summary className="cursor-pointer text-sm font-semibold text-white">Educación · {draft.education.length}</summary>
+          <div className="mt-4 flex justify-end">
+            <DeleteButton label="Eliminar educación completa" onClick={() => onChange({ ...draft, education: [] })} />
+          </div>
           <div className="mt-4 space-y-4">
             {draft.education.map((entry, index) => (
               <div key={`${entry.institution}-${index}`} className="rounded-xl border border-white/10 p-3">
+                <div className="mb-3 flex justify-end">
+                  <DeleteButton
+                    label="Eliminar este estudio"
+                    onClick={() => onChange({
+                      ...draft,
+                      education: draft.education.filter((_, entryIndex) => entryIndex !== index),
+                    })}
+                  />
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Título"><input className={inputClass} value={entry.title} onChange={(event) => updateEducation(index, { title: event.target.value })} /></Field>
                   <Field label="Institución"><input className={inputClass} value={entry.institution} onChange={(event) => updateEducation(index, { institution: event.target.value })} /></Field>
@@ -146,29 +203,59 @@ export function ResumeDraftEditor({
         </details>
       )}
 
-      <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-white">Habilidades</summary>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {([
-            ["technical", "Técnicas"], ["soft", "Blandas"], ["languages", "Idiomas"],
-          ] as const).map(([key, label]) => (
-            <Field key={key} label={`${label} · una por línea`}>
-              <textarea
-                className={`${inputClass} min-h-28`}
-                value={draft.skills[key].join("\n")}
-                onChange={(event) => onChange({
-                  ...draft,
-                  skills: { ...draft.skills, [key]: lineValues(event.target.value) },
-                })}
-              />
-            </Field>
-          ))}
-        </div>
-      </details>
+      {hasSkills && (
+        <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-white">Habilidades</summary>
+          <div className="mt-4 flex justify-end">
+            <DeleteButton
+              label="Eliminar habilidades completas"
+              onClick={() => onChange({
+                ...draft,
+                skills: { ...draft.skills, technical: [], soft: [], languages: [] },
+              })}
+            />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {([
+              ["technical", "Técnicas"], ["soft", "Blandas"], ["languages", "Idiomas"],
+            ] as const).filter(([key]) => draft.skills[key].length > 0).map(([key, label]) => (
+              <div key={key} className="rounded-xl border border-white/10 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className={labelClass}>{label} · una por línea</span>
+                  <DeleteButton
+                    label={`Eliminar ${label.toLowerCase()}`}
+                    onClick={() => onChange({
+                      ...draft,
+                      skills: { ...draft.skills, [key]: [] },
+                    })}
+                  />
+                </div>
+                <textarea
+                  className={`${inputClass} min-h-28`}
+                  value={draft.skills[key].join("\n")}
+                  onChange={(event) => onChange({
+                    ...draft,
+                    skills: { ...draft.skills, [key]: lineValues(event.target.value) },
+                  })}
+                />
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {draft.skills.certifications.length > 0 && (
         <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
           <summary className="cursor-pointer text-sm font-semibold text-white">Certificaciones · {draft.skills.certifications.length}</summary>
+          <div className="mt-4 flex justify-end">
+            <DeleteButton
+              label="Eliminar certificaciones completas"
+              onClick={() => onChange({
+                ...draft,
+                skills: { ...draft.skills, certifications: [] },
+              })}
+            />
+          </div>
           <div className="mt-4 space-y-3">
             {draft.skills.certifications.map((certification, index) => (
               <div key={`${certification.title}-${index}`} className="grid gap-3 rounded-xl border border-white/10 p-3 sm:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_0.55fr_1.2fr_auto] xl:items-end">

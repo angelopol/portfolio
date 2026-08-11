@@ -82,6 +82,7 @@ export type ResumeGenerationRequest = {
   experienceDetail?: ResumeExperienceDetail;
   certificationLimit?: number;
   sections?: Partial<ResumeSections>;
+  compactSpacing?: boolean;
   profileImageUrl?: string;
   targetRole?: string;
   jobDescription?: string;

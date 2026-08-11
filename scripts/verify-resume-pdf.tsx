@@ -149,6 +149,22 @@ async function verifyOmittedSections() {
   };
 }
 
+async function verifyCompactSpacing() {
+  const rendered = await renderResumePdf(
+    resume,
+    "/assets/profile.jpeg",
+    "ats",
+    undefined,
+    true,
+  );
+  return {
+    layout: "ats-compact-spacing",
+    pages: rendered.validation.pages,
+    checks: rendered.validation.checks,
+    compactionLevel: rendered.compactionLevel,
+  };
+}
+
 async function main() {
   const spanishResume: GeneratedResume = {
     ...resume,
@@ -173,6 +189,7 @@ async function main() {
     verifyAdaptiveCertifications(),
     verifySinglePagePreference(),
     verifyOmittedSections(),
+    verifyCompactSpacing(),
   ]);
   console.log(JSON.stringify(results, null, 2));
 }

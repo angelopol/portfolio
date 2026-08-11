@@ -584,7 +584,8 @@ export async function renderResumePdf(
   resume: GeneratedResume,
   profileImage: string,
   layout: ResumeLayout = "ats",
-  profileImageOverride?: string
+  profileImageOverride?: string,
+  compactSpacing = false,
 ): Promise<RenderedResumePdf> {
   let image: string | undefined;
   if (layout === "visual") {
@@ -603,7 +604,7 @@ export async function renderResumePdf(
           <ResumeDocument
             resume={candidate}
             image={image}
-            compact={level >= 2}
+            compact={compactSpacing || level >= 2}
             layout={layout}
           />
         )

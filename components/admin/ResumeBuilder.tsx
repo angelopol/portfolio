@@ -54,6 +54,7 @@ export function ResumeBuilder({
   const [sections, setSections] = useState<ResumeSections>({ ...DEFAULT_RESUME_SECTIONS });
   const [limitCertifications, setLimitCertifications] = useState(false);
   const [certificationLimit, setCertificationLimit] = useState(10);
+  const [compactSpacing, setCompactSpacing] = useState(false);
   const [softSkillsInput, setSoftSkillsInput] = useState(() => content.resume.softSkills.join("\n"));
   const [languagesInput, setLanguagesInput] = useState(() => content.resume.languages.join("\n"));
   const [profileImageUrl, setProfileImageUrl] = useState("");
@@ -124,6 +125,7 @@ export function ResumeBuilder({
         ? certificationLimit
         : undefined,
       sections,
+      compactSpacing,
       profileImageUrl: profileImageUrl || undefined,
       targetRole,
       jobDescription,
@@ -432,6 +434,8 @@ export function ResumeBuilder({
               onChange={setResumeDraft}
               onRender={() => void renderResumeDraft(resumeDraft)}
               rendering={rendering}
+              compactSpacing={compactSpacing}
+              onCompactSpacingChange={setCompactSpacing}
             />
           ) : null}
 
