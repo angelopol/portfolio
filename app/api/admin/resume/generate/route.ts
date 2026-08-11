@@ -2,11 +2,16 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ADMIN_COOKIE_NAME, hasAdminSession } from "@/lib/auth";
+import { sanitizeGeneratedResumeDraft } from "@/lib/resume/draft";
 import { generateResumeContent } from "@/lib/resume/generate";
 import { renderResumePdf } from "@/lib/resume/pdf";
 import { getSiteContent, normalizeSiteContent } from "@/lib/site-content";
 import type { SiteContent } from "@/types/site";
-import type { ResumeGenerationRequest } from "@/types/resume";
+import {
+  DEFAULT_RESUME_SECTIONS,
+  type GeneratedResume,
+  type ResumeGenerationRequest,
+} from "@/types/resume";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +28,47 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function optionalText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function optionalCertificationLimit(value: unknown) {
+  if (value === null || value === undefined || value === "") return undefined;
+  const candidate = Number(value);
+  if (!Number.isInteger(candidate) || candidate < 1 || candidate > 50) {
+    throw new BadRequestError("El limite de certificaciones debe estar entre 1 y 50.");
+  }
+  return candidate;
+}
+
+function resumeSections(value: unknown) {
+  const source = isRecord(value) ? value : {};
+  return {
+    summary: source.summary !== false,
+    experience: source.experience !== false,
+    education: source.education !== false,
+    certifications: source.certifications !== false,
+    skills: source.skills !== false,
+  } satisfies typeof DEFAULT_RESUME_SECTIONS;
+}
+
+function applyGenerationOptions(
+  resume: GeneratedResume,
+  request: ResumeGenerationRequest,
+): GeneratedResume {
+  const sections = { ...DEFAULT_RESUME_SECTIONS, ...request.sections };
+  return {
+    ...resume,
+    summary: sections.summary ? resume.summary : "",
+    experience: sections.experience ? resume.experience : [],
+    education: sections.education ? resume.education : [],
+    skills: {
+      technical: sections.skills ? resume.skills.technical : [],
+      soft: sections.skills ? resume.skills.soft : [],
+      languages: sections.skills ? resume.skills.languages : [],
+      certifications: sections.certifications
+        ? resume.skills.certifications.slice(0, request.certificationLimit)
+        : [],
+    },
+  };
 }
 
 function assertSiteContent(value: unknown): asserts value is SiteContent {
@@ -82,6 +128,8 @@ export async function POST(request: Request) {
       language: payload.language === "es" ? "es" : "en",
       layout,
       experienceDetail,
+      certificationLimit: optionalCertificationLimit(payload.certificationLimit),
+      sections: resumeSections(payload.sections),
       profileImageUrl: optionalText(payload.profileImageUrl, 2048),
       targetRole: optionalText(payload.targetRole, 240),
       jobDescription: optionalText(payload.jobDescription, 6000),
@@ -96,7 +144,29 @@ export async function POST(request: Request) {
       content = await getSiteContent();
     }
 
-    const { resume, model } = await generateResumeContent(content, generationRequest);
+    const mode = payload.mode === "draft" || payload.mode === "render" ? payload.mode : "pdf";
+    if (mode === "render" && !isRecord(payload.resumeDraft)) {
+      throw new BadRequestError("El borrador editable del CV no tiene un formato valido.");
+    }
+
+    const generated = mode === "render"
+      ? {
+          resume: applyGenerationOptions(
+            sanitizeGeneratedResumeDraft(payload.resumeDraft, generationRequest.language),
+            generationRequest,
+          ),
+          model: optionalText(payload.model, 120) || "borrador editado",
+        }
+      : await generateResumeContent(content, generationRequest);
+
+    if (mode === "draft") {
+      return NextResponse.json(
+        { resume: generated.resume, model: generated.model },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const { resume, model } = generated;
     const rendered = await renderResumePdf(
       resume,
       content.about.profileImage,

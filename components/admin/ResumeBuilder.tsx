@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiCheckCircle, FiCpu, FiDownload, FiFileText, FiImage, FiRefreshCw, FiShield, FiUser } from "react-icons/fi";
 
+import { ResumeDraftEditor } from "@/components/admin/ResumeDraftEditor";
 import type { SiteContent } from "@/types/site";
-import type {
+import {
+  DEFAULT_RESUME_SECTIONS,
+  type GeneratedResume,
   ResumeExperienceDetail,
-  ResumeGenerationRequest,
-  ResumeLanguage,
-  ResumeLayout,
+  type ResumeGenerationRequest,
+  type ResumeLanguage,
+  type ResumeLayout,
+  type ResumeSections,
 } from "@/types/resume";
 
 const fieldClass =
@@ -47,6 +51,9 @@ export function ResumeBuilder({
   const [language, setLanguage] = useState<ResumeLanguage>("en");
   const [layout, setLayout] = useState<ResumeLayout>("ats");
   const [experienceDetail, setExperienceDetail] = useState<ResumeExperienceDetail>("explanatory");
+  const [sections, setSections] = useState<ResumeSections>({ ...DEFAULT_RESUME_SECTIONS });
+  const [limitCertifications, setLimitCertifications] = useState(false);
+  const [certificationLimit, setCertificationLimit] = useState(10);
   const [softSkillsInput, setSoftSkillsInput] = useState(() => content.resume.softSkills.join("\n"));
   const [languagesInput, setLanguagesInput] = useState(() => content.resume.languages.join("\n"));
   const [profileImageUrl, setProfileImageUrl] = useState("");
@@ -54,6 +61,8 @@ export function ResumeBuilder({
   const [jobDescription, setJobDescription] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [rendering, setRendering] = useState(false);
+  const [resumeDraft, setResumeDraft] = useState<GeneratedResume | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState("curriculum-personalizado.pdf");
@@ -106,32 +115,51 @@ export function ResumeBuilder({
     onChange({ ...content, contact: { ...content.contact, portfolioUrl: value } });
   }
 
-  async function generateResume() {
-    setGenerating(true);
-    setError(null);
-    setValidation(null);
-
-    const request: ResumeGenerationRequest & { content: SiteContent } = {
+  function generationRequest(): ResumeGenerationRequest & { content: SiteContent } {
+    return {
       language,
       layout,
       experienceDetail,
+      certificationLimit: limitCertifications && sections.certifications
+        ? certificationLimit
+        : undefined,
+      sections,
       profileImageUrl: profileImageUrl || undefined,
       targetRole,
       jobDescription,
       additionalInstructions,
       content,
     };
+  }
+
+  async function responseError(response: Response) {
+    try {
+      const data = (await response.json()) as { error?: string };
+      return data.error || "No se pudo generar el CV.";
+    } catch {
+      return "No se pudo generar el CV.";
+    }
+  }
+
+  async function renderResumeDraft(draft: GeneratedResume, model = usedModel) {
+    setRendering(true);
+    setError(null);
+    setValidation(null);
 
     try {
       const response = await fetch("/api/admin/resume/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
+        body: JSON.stringify({
+          ...generationRequest(),
+          mode: "render",
+          resumeDraft: draft,
+          model,
+        }),
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "No se pudo generar el CV.");
+        throw new Error(await responseError(response));
       }
 
       const blob = await response.blob();
@@ -148,6 +176,31 @@ export function ResumeBuilder({
         imageIncluded: response.headers.get("X-Resume-Image-Included") === "true",
         layout: response.headers.get("X-Resume-Layout") === "visual" ? "visual" : "ats",
       });
+    } catch (renderError) {
+      setError(renderError instanceof Error ? renderError.message : "No se pudo actualizar el PDF.");
+    } finally {
+      setRendering(false);
+    }
+  }
+
+  async function generateResume() {
+    setGenerating(true);
+    setError(null);
+    setValidation(null);
+
+    try {
+      const response = await fetch("/api/admin/resume/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...generationRequest(), mode: "draft" }),
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+
+      const data = (await response.json()) as { resume?: GeneratedResume; model?: string };
+      if (!data.resume) throw new Error("Gemini no devolvió un borrador editable.");
+      setResumeDraft(data.resume);
+      setUsedModel(data.model || null);
+      await renderResumeDraft(data.resume, data.model);
     } catch (generationError) {
       setError(generationError instanceof Error ? generationError.message : "No se pudo generar el CV.");
     } finally {
@@ -296,6 +349,62 @@ export function ResumeBuilder({
                 ))}
               </div>
             </Field>
+            <Field label="Secciones incluidas" hint="Todas están activas por defecto. Los datos de identidad y contacto siempre se conservan.">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  ["summary", "Resumen profesional"],
+                  ["experience", "Experiencia laboral"],
+                  ["education", "Educación"],
+                  ["certifications", "Certificaciones"],
+                  ["skills", "Habilidades"],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-3 text-sm text-slate-300 transition hover:bg-white/5">
+                    <input
+                      type="checkbox"
+                      checked={sections[key]}
+                      onChange={(event) => setSections((current) => ({ ...current, [key]: event.target.checked }))}
+                      className="h-4 w-4 accent-[var(--color-accent)]"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+            <Field
+              label="Límite de certificaciones · opcional"
+              hint={sections.certifications
+                ? "Sin límite, Gemini selecciona y el maquetador incluye las que caben. Con límite se solicitan como máximo las indicadas, hasta 50."
+                : "Activa la sección Certificaciones para configurar este límite."}
+            >
+              <div className={`rounded-2xl border border-white/10 bg-slate-950/35 p-4 ${sections.certifications ? "" : "opacity-50"}`}>
+                <label className="flex items-center justify-between gap-4 text-sm font-semibold text-slate-300">
+                  <span>Fijar cantidad máxima</span>
+                  <input
+                    type="checkbox"
+                    checked={limitCertifications}
+                    disabled={!sections.certifications}
+                    onChange={(event) => setLimitCertifications(event.target.checked)}
+                    className="h-4 w-4 accent-[var(--color-accent)]"
+                  />
+                </label>
+                <div className="mt-4 flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="1"
+                    max="50"
+                    step="1"
+                    value={certificationLimit}
+                    disabled={!sections.certifications || !limitCertifications}
+                    onChange={(event) => setCertificationLimit(Number(event.target.value))}
+                    className="min-w-0 flex-1 accent-[var(--color-accent)] disabled:cursor-not-allowed"
+                    aria-label="Cantidad máxima de certificaciones"
+                  />
+                  <output className="min-w-12 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-center text-sm font-bold tabular-nums text-white">
+                    {limitCertifications ? certificationLimit : "IA"}
+                  </output>
+                </div>
+              </div>
+            </Field>
             <Field label="Cargo objetivo" hint="Ejemplo: Senior Backend Developer"><input className={fieldClass} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} /></Field>
             <Field label="Oferta o descripción del empleo" hint="Gemini priorizará los hechos y tecnologías relevantes sin inventar información."><textarea className={`${fieldClass} min-h-44`} value={jobDescription} onChange={(event) => setJobDescription(event.target.value)} placeholder="Pega aquí la descripción de la vacante..." /></Field>
             <Field label="Instrucciones adicionales"><textarea className={`${fieldClass} min-h-28`} value={additionalInstructions} onChange={(event) => setAdditionalInstructions(event.target.value)} placeholder="Ej. resaltar experiencia con AWS y arquitectura backend" /></Field>
@@ -309,23 +418,34 @@ export function ResumeBuilder({
               </div>
             ) : null}
 
-            <button type="button" onClick={() => void generateResume()} disabled={generating} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
-              {generating ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Gemini está redactando y maquetando...</> : previewUrl ? <><FiRefreshCw /> Generar una nueva versión</> : <><FiFileText /> Generar CV en PDF</>}
+            <button type="button" onClick={() => void generateResume()} disabled={generating || rendering} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-accent)] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
+              {generating ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Gemini está preparando el borrador...</> : previewUrl ? <><FiRefreshCw /> Generar una nueva versión</> : <><FiFileText /> Generar CV en PDF</>}
             </button>
             <p className="text-center text-xs leading-5 text-slate-500">La generación puede tardar aproximadamente un minuto.</p>
           </div>
         </div>
 
-        <div className="glass-panel flex min-h-[760px] flex-col border border-white/10 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><h2 className="font-display text-xl font-semibold">Vista previa</h2><p className="mt-1 text-xs text-slate-500">{usedModel ? `Generado con ${usedModel} · ${validation?.layout === "visual" ? "Plantilla visual" : "ATS estricto"}` : "El PDF aparecerá aquí al finalizar."}</p></div>
-            {previewUrl ? <a href={previewUrl} download={downloadName} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950"><FiDownload /> Descargar PDF</a> : null}
+        <div className="space-y-6">
+          {resumeDraft ? (
+            <ResumeDraftEditor
+              draft={resumeDraft}
+              onChange={setResumeDraft}
+              onRender={() => void renderResumeDraft(resumeDraft)}
+              rendering={rendering}
+            />
+          ) : null}
+
+          <div className="glass-panel flex min-h-[760px] flex-col border border-white/10 p-4 sm:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h2 className="font-display text-xl font-semibold">Vista previa</h2><p className="mt-1 text-xs text-slate-500">{usedModel ? `Generado con ${usedModel} · ${validation?.layout === "visual" ? "Plantilla visual" : "ATS estricto"}` : "El PDF aparecerá aquí al finalizar."}</p></div>
+              {previewUrl ? <a href={previewUrl} download={downloadName} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950"><FiDownload /> Descargar PDF</a> : null}
+            </div>
+            {previewUrl ? (
+              <iframe src={previewUrl} title="Vista previa del CV generado" className="min-h-[720px] flex-1 rounded-2xl border border-white/10 bg-white" />
+            ) : (
+              <div className="flex min-h-[720px] flex-1 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/25 p-10 text-center"><div><FiFileText className="mx-auto text-5xl text-slate-700" /><p className="mt-4 font-semibold text-slate-300">Aún no se ha generado un documento</p><p className="mt-2 max-w-md text-sm leading-6 text-slate-500">Completa la experiencia, educación, habilidades y certificaciones para obtener un resultado más sólido.</p></div></div>
+            )}
           </div>
-          {previewUrl ? (
-            <iframe src={previewUrl} title="Vista previa del CV generado" className="min-h-[720px] flex-1 rounded-2xl border border-white/10 bg-white" />
-          ) : (
-            <div className="flex min-h-[720px] flex-1 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/25 p-10 text-center"><div><FiFileText className="mx-auto text-5xl text-slate-700" /><p className="mt-4 font-semibold text-slate-300">Aún no se ha generado un documento</p><p className="mt-2 max-w-md text-sm leading-6 text-slate-500">Completa la experiencia, educación, habilidades y certificaciones para obtener un resultado más sólido.</p></div></div>
-          )}
         </div>
       </div>
     </section>

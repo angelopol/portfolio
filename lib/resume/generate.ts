@@ -1,7 +1,6 @@
 import "server-only";
 
 import { localizeSiteContent } from "@/lib/i18n";
-import { certificationDateScore } from "@/lib/resume/certification-date";
 import type { SiteContent } from "@/types/site";
 import type {
   GeneratedResume,
@@ -10,6 +9,7 @@ import type {
   GeneratedResumeExperience,
   ResumeExperienceDetail,
   ResumeGenerationRequest,
+  ResumeSections,
 } from "@/types/resume";
 
 type GeminiResponse = {
@@ -103,6 +103,16 @@ const experienceDetailConfig: Record<ResumeExperienceDetail, {
 
 function getExperienceDetail(request: ResumeGenerationRequest) {
   return experienceDetailConfig[request.experienceDetail ?? "explanatory"];
+}
+
+function getSections(request: ResumeGenerationRequest): ResumeSections {
+  return {
+    summary: request.sections?.summary !== false,
+    experience: request.sections?.experience !== false,
+    education: request.sections?.education !== false,
+    certifications: request.sections?.certifications !== false,
+    skills: request.sections?.skills !== false,
+  };
 }
 
 function text(value: unknown, fallback = "", maxLength = 600) {
@@ -209,32 +219,27 @@ function fallbackEducation(content: SiteContent): GeneratedResumeEducation[] {
     }));
 }
 
-function canonicalCertifications(content: SiteContent, ids: unknown): GeneratedResumeCertification[] {
+function canonicalCertifications(
+  content: SiteContent,
+  ids: unknown,
+  limit?: number,
+): GeneratedResumeCertification[] {
   const requestedIds = strings(
     ids,
     Math.min(100, Math.max(10, content.certifications.length)),
     200
   );
-  const requestedOrder = new Map(requestedIds.map((id, index) => [id, index]));
+  const requestedSet = new Set(requestedIds);
   const source = content.certifications
     .map((certification, index) => ({ certification, index }))
-    .filter(({ certification }) => requestedOrder.has(certification.id))
+    .filter(({ certification }) => requestedSet.has(certification.id))
     .sort((left, right) => {
       const favoriteDifference = Number(Boolean(right.certification.favorite)) -
         Number(Boolean(left.certification.favorite));
       if (favoriteDifference) return favoriteDifference;
-
-      const leftRequested = requestedOrder.get(left.certification.id);
-      const rightRequested = requestedOrder.get(right.certification.id);
-      if (leftRequested !== undefined || rightRequested !== undefined) {
-        if (leftRequested === undefined) return 1;
-        if (rightRequested === undefined) return -1;
-        if (leftRequested !== rightRequested) return leftRequested - rightRequested;
-      }
-
-      return certificationDateScore(right.certification.issuedAt) -
-        certificationDateScore(left.certification.issuedAt) || left.index - right.index;
+      return left.index - right.index;
     })
+    .slice(0, limit)
     .map(({ certification }) => certification);
 
   return source.map((certification) => ({
@@ -293,6 +298,7 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
   const rawEducation = Array.isArray(raw.education) ? raw.education : [];
   const rawSkills = (raw.skills ?? {}) as Record<string, unknown>;
   const detail = getExperienceDetail(request);
+  const sections = getSections(request);
 
   const experience = rawExperience
     .map((item) => {
@@ -354,7 +360,7 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
     language: request.language,
     fullName: text(content.resume.fullName, content.site.name, 120),
     professionalTitle: text(raw.professionalTitle, request.targetRole || content.site.role, 140),
-    summary: text(raw.summary, content.home.description, 900),
+    summary: sections.summary ? text(raw.summary, content.home.description, 900) : "",
     contact: {
       location: content.contact.location,
       phone: content.contact.phone,
@@ -363,13 +369,25 @@ function sanitizeResume(raw: Record<string, unknown>, content: SiteContent, requ
       linkedinUrl: content.contact.linkedinUrl,
       githubUrl: content.contact.githubUrl,
     },
-    experience: experience.length ? experience : fallbackExperience(content, request),
-    education: education.length ? education : fallbackEducation(content),
+    experience: sections.experience
+      ? (experience.length ? experience : fallbackExperience(content, request))
+      : [],
+    education: sections.education
+      ? (education.length ? education : fallbackEducation(content))
+      : [],
     skills: {
-      technical: technical.length ? technical : technicalSource.slice(0, 28),
-      certifications: canonicalCertifications(content, rawSkills.certificationIds),
-      soft: soft.length ? soft : content.resume.softSkills.slice(0, 10),
-      languages: languages.length ? languages : content.resume.languages.slice(0, 8),
+      technical: sections.skills
+        ? (technical.length ? technical : technicalSource.slice(0, 28))
+        : [],
+      certifications: sections.certifications
+        ? canonicalCertifications(content, rawSkills.certificationIds, request.certificationLimit)
+        : [],
+      soft: sections.skills
+        ? (soft.length ? soft : content.resume.softSkills.slice(0, 10))
+        : [],
+      languages: sections.skills
+        ? (languages.length ? languages : content.resume.languages.slice(0, 8))
+        : [],
     },
   };
 }
@@ -386,6 +404,20 @@ export async function generateResumeContent(
   const languageName = request.language === "es" ? "Spanish" : "English";
   const layoutName = request.layout === "visual" ? "classic visual resume" : "strict single-column ATS resume";
   const detail = getExperienceDetail(request);
+  const sections = getSections(request);
+  const includedSections = Object.entries(sections)
+    .filter(([, included]) => included)
+    .map(([name]) => name)
+    .join(", ");
+  const certificationLimit = request.certificationLimit ?? null;
+  const promptContent = {
+    ...content,
+    certifications: content.certifications.map((certification, index) => ({
+      ...certification,
+      cvFavorite: Boolean(certification.favorite),
+      cvTablePosition: index + 1,
+    })),
+  };
   const prompt = `You are an expert technical resume writer. Create a concise, ATS-friendly ${layoutName} in ${languageName} from the complete portfolio JSON below.
 
 Hard rules:
@@ -395,6 +427,8 @@ Hard rules:
 - Select each experience and education sourceId at most once.
 - Education descriptions must contain only useful additional study details. Return an empty description instead of repeating the degree, institution, location, or dates.
 - For certifications, return only exact certification IDs in certificationIds. This array is an allow-list: omit every certification that is unrelated to the requested profile or explicitly excluded by the additional instructions.
+- Certification priority is strict: choose favorites (cvFavorite=true) first, then use cvTablePosition ascending. Relevance and additional instructions decide which eligible entries to keep, but never demote an eligible favorite below a non-favorite.
+- ${certificationLimit === null ? "There is no explicit certification count; select the useful eligible certifications and let the PDF renderer decide how many fit." : `Select no more than ${certificationLimit} certification IDs. Prefer reaching that count when enough eligible certifications exist.`}
 - For technical and language skills, copy exact values from the JSON arrays. Do not create synonyms.
 - For soft skills, copy exact values when resume.softSkills contains entries. Only when that array is empty, infer 3-5 concise soft skills that match the target role and job description.
 - The final document must fit in no more than 2 pages using a dense classic resume template.
@@ -404,14 +438,17 @@ Hard rules:
 - Keep the summary under 100 words.
 - Select at most 6 experience entries. Add up to ${detail.highlightLimit} concise achievement-oriented highlights per experience, without repeating the summary paragraph.
 - Select at most 4 education entries, 28 technical skills, all relevant and permitted certification IDs, 10 soft skills, and 8 languages. Follow explicit topical inclusion and exclusion preferences from additional instructions when selecting certificationIds. Rank the remaining IDs by relevance; the server decides how many fit.
+- Include only these enabled sections: ${includedSections}. For every disabled section, return an empty string or empty array in its corresponding response field. Contact identity and professional title always remain enabled.
 - Tailor emphasis to the target role or job description when supplied, without fabricating facts.
 
 <target_role>${text(request.targetRole, "Not specified", 240)}</target_role>
 <job_description>${text(request.jobDescription, "Not supplied", 6000)}</job_description>
 <additional_instructions>${text(request.additionalInstructions, "None", 2000)}</additional_instructions>
+<certification_limit>${certificationLimit ?? "AI decides"}</certification_limit>
+<enabled_sections>${includedSections}</enabled_sections>
 
 <portfolio_json>
-${JSON.stringify(content, null, 2)}
+${JSON.stringify(promptContent, null, 2)}
 </portfolio_json>`;
 
   const response = await fetch(

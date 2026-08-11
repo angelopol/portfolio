@@ -133,6 +133,22 @@ async function verifySinglePagePreference() {
   };
 }
 
+async function verifyOmittedSections() {
+  const minimalResume: GeneratedResume = {
+    ...resume,
+    summary: "",
+    education: [],
+    skills: { technical: [], certifications: [], soft: [], languages: [] },
+  };
+  const rendered = await renderResumePdf(minimalResume, "/assets/profile.jpeg", "ats");
+  return {
+    layout: "ats-optional-sections",
+    pages: rendered.validation.pages,
+    checks: rendered.validation.checks,
+    certificationsIncluded: rendered.certificationsIncluded,
+  };
+}
+
 async function main() {
   const spanishResume: GeneratedResume = {
     ...resume,
@@ -156,6 +172,7 @@ async function main() {
     spanishAts,
     verifyAdaptiveCertifications(),
     verifySinglePagePreference(),
+    verifyOmittedSections(),
   ]);
   console.log(JSON.stringify(results, null, 2));
 }

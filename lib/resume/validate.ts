@@ -140,7 +140,9 @@ export async function validateResumePdf(
     resume.experience.length ? copy.experience : "",
     resume.education.length ? copy.education : "",
     resume.skills.certifications.length ? copy.certifications : "",
-    copy.skills,
+    resume.skills.technical.length || resume.skills.soft.length || resume.skills.languages.length
+      ? copy.skills
+      : "",
   ].filter(Boolean);
 
   let sectionCursor = -1;

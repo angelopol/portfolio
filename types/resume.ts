@@ -4,6 +4,22 @@ export type ResumeLayout = "ats" | "visual";
 
 export type ResumeExperienceDetail = "concise" | "explanatory" | "detailed";
 
+export type ResumeSections = {
+  summary: boolean;
+  experience: boolean;
+  education: boolean;
+  certifications: boolean;
+  skills: boolean;
+};
+
+export const DEFAULT_RESUME_SECTIONS: ResumeSections = {
+  summary: true,
+  experience: true,
+  education: true,
+  certifications: true,
+  skills: true,
+};
+
 export type GeneratedResumeLink = {
   label: string;
   url: string;
@@ -64,6 +80,8 @@ export type ResumeGenerationRequest = {
   language: ResumeLanguage;
   layout?: ResumeLayout;
   experienceDetail?: ResumeExperienceDetail;
+  certificationLimit?: number;
+  sections?: Partial<ResumeSections>;
   profileImageUrl?: string;
   targetRole?: string;
   jobDescription?: string;

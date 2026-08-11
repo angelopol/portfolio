@@ -509,12 +509,14 @@ function SkillsSection({ resume }: { resume: GeneratedResume }) {
     [copy.soft, resume.skills.soft],
     [copy.languages, resume.skills.languages],
   ] as const;
+  const visibleRows = rows.filter(([, values]) => values.length);
+  if (!visibleRows.length) return null;
 
   return (
     <View style={styles.section}>
       <SectionHeading>{copy.skills}</SectionHeading>
       <View style={styles.skillsList}>
-        {rows.filter(([, values]) => values.length).map(([label, values]) => (
+        {visibleRows.map(([label, values]) => (
           <View key={label} style={styles.skillRow} wrap={false}>
             <Text style={styles.skillLabel}>• {label}:</Text>
             <Text style={styles.skillValue}>{values.join(" · ")}</Text>
