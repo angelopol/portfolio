@@ -64,6 +64,10 @@ export function ResumeBuilder({
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [jobImage, setJobImage] = useState<ResumeGenerationRequest["jobImage"]>();
+  const [jobImageName, setJobImageName] = useState("");
+  const [generateDirectContactMessage, setGenerateDirectContactMessage] = useState(false);
+  const [directContactMessage, setDirectContactMessage] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
   const [rendering, setRendering] = useState(false);
@@ -125,7 +129,7 @@ export function ResumeBuilder({
     onChange({ ...content, contact: { ...content.contact, portfolioUrl: value } });
   }
 
-  function generationRequest(): ResumeGenerationRequest & { content: SiteContent } {
+  function generationRequest(includeJobImage = false): ResumeGenerationRequest & { content: SiteContent } {
     return {
       language,
       layout,
@@ -141,6 +145,8 @@ export function ResumeBuilder({
       profileImageUrl: profileImageUrl || undefined,
       targetRole,
       jobDescription,
+      jobImage: includeJobImage ? jobImage : undefined,
+      generateDirectContactMessage,
       additionalInstructions,
       content,
     };
@@ -206,14 +212,15 @@ export function ResumeBuilder({
       const response = await fetch("/api/admin/resume/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...generationRequest(), mode: "draft" }),
+        body: JSON.stringify({ ...generationRequest(true), mode: "draft" }),
       });
       if (!response.ok) throw new Error(await responseError(response));
 
-      const data = (await response.json()) as { resume?: GeneratedResume; model?: string };
+      const data = (await response.json()) as { resume?: GeneratedResume; model?: string; directContactMessage?: string };
       if (!data.resume) throw new Error("Gemini no devolvió un borrador editable.");
       setResumeDraft(data.resume);
       setUsedModel(data.model || null);
+      setDirectContactMessage(data.directContactMessage || "");
       await renderResumeDraft(data.resume, data.model);
     } catch (generationError) {
       setError(generationError instanceof Error ? generationError.message : "No se pudo generar el CV.");
@@ -475,8 +482,77 @@ export function ResumeBuilder({
               </div>
             </Field>
             <Field label="Cargo objetivo" hint="Ejemplo: Senior Backend Developer"><input className={fieldClass} value={targetRole} onChange={(event) => setTargetRole(event.target.value)} /></Field>
-            <Field label="Oferta o descripción del empleo" hint="Gemini priorizará los hechos y tecnologías relevantes sin inventar información."><textarea className={`${fieldClass} min-h-44`} value={jobDescription} onChange={(event) => setJobDescription(event.target.value)} placeholder="Pega aquí la descripción de la vacante..." /></Field>
+            <Field label="Oferta o descripción del empleo" hint="Puedes pegar el texto, adjuntar una captura o usar ambos. Gemini analizará toda la información disponible.">
+              <textarea className={`${fieldClass} min-h-44`} value={jobDescription} onChange={(event) => setJobDescription(event.target.value)} placeholder="Pega aquí la descripción de la vacante..." />
+              <div className="mt-3 rounded-2xl border border-dashed border-white/15 bg-slate-950/35 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-slate-300"><FiImage /> Imagen de la oferta · opcional</p>
+                    <p className="mt-1 truncate text-xs text-slate-500">{jobImageName || "JPG, PNG o WebP · máximo 2 MB"}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
+                      <FiImage /> {jobImage ? "Cambiar imagen" : "Adjuntar imagen"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          const input = event.currentTarget;
+                          const file = input.files?.[0];
+                          if (!file) return;
+                          if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+                            setError("La imagen de la oferta debe estar en formato JPG, PNG o WebP.");
+                            input.value = "";
+                            return;
+                          }
+                          if (file.size > 2_000_000) {
+                            setError("La imagen de la oferta no puede superar 2 MB.");
+                            input.value = "";
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const result = typeof reader.result === "string" ? reader.result : "";
+                            const data = result.split(",", 2)[1];
+                            if (!data) {
+                              setError("No se pudo leer la imagen seleccionada.");
+                              return;
+                            }
+                            setJobImage({
+                              mimeType: file.type as NonNullable<ResumeGenerationRequest["jobImage"]>["mimeType"],
+                              data,
+                            });
+                            setJobImageName(file.name);
+                            setError(null);
+                          };
+                          reader.onerror = () => setError("No se pudo leer la imagen seleccionada.");
+                          reader.readAsDataURL(file);
+                          input.value = "";
+                        }}
+                      />
+                    </label>
+                    {jobImage ? (
+                      <button type="button" onClick={() => { setJobImage(undefined); setJobImageName(""); }} className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
+                        Quitar
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </Field>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm text-slate-300 transition hover:bg-white/5">
+              <input type="checkbox" checked={generateDirectContactMessage} onChange={(event) => setGenerateDirectContactMessage(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]" />
+              <span><span className="block font-semibold text-white">Mensaje para contacto directo</span><span className="mt-1 block text-xs leading-5 text-slate-500">Realiza otra solicitud a Gemini para redactar un mensaje breve dirigido al reclutador o contacto de la oferta.</span></span>
+            </label>
             <Field label="Instrucciones adicionales"><textarea className={`${fieldClass} min-h-28`} value={additionalInstructions} onChange={(event) => setAdditionalInstructions(event.target.value)} placeholder="Ej. resaltar experiencia con AWS y arquitectura backend" /></Field>
+
+            {directContactMessage ? (
+              <Field label="Mensaje para contacto directo" hint="Puedes editarlo y copiarlo antes de enviarlo.">
+                <textarea className={`${fieldClass} min-h-36`} value={directContactMessage} onChange={(event) => setDirectContactMessage(event.target.value)} />
+                <button type="button" onClick={() => void navigator.clipboard.writeText(directContactMessage)} className="mt-3 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">Copiar mensaje</button>
+              </Field>
+            ) : null}
 
             {error ? <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-6 text-rose-100">{error}</div> : null}
 

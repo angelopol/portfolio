@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 // Keep this compatible with Vercel Hobby's per-function ceiling.
 export const maxDuration = 60;
 
-const MAX_REQUEST_BYTES = 1_000_000;
+const MAX_REQUEST_BYTES = 3_500_000;
 
 class BadRequestError extends Error {}
 
@@ -28,6 +28,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function optionalText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function optionalJobImage(value: unknown): ResumeGenerationRequest["jobImage"] {
+  if (value === undefined || value === null) return undefined;
+  if (!isRecord(value)) throw new BadRequestError("La imagen de la oferta no tiene un formato valido.");
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
+  const mimeType = allowedMimeTypes.find((candidate) => candidate === value.mimeType);
+  if (!mimeType || typeof value.data !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.data)) {
+    throw new BadRequestError("La imagen de la oferta no tiene un formato valido.");
+  }
+  if (Buffer.byteLength(value.data, "base64") > 2_000_000) {
+    throw new BadRequestError("La imagen de la oferta no puede superar 2 MB.");
+  }
+  return { mimeType, data: value.data };
 }
 
 function optionalCertificationLimit(value: unknown) {
@@ -173,6 +187,8 @@ export async function POST(request: Request) {
       profileImageUrl: optionalText(payload.profileImageUrl, 2048),
       targetRole: optionalText(payload.targetRole, 240),
       jobDescription: optionalText(payload.jobDescription, 6000),
+      jobImage: optionalJobImage(payload.jobImage),
+      generateDirectContactMessage: payload.generateDirectContactMessage === true,
       additionalInstructions: optionalText(payload.additionalInstructions, 2000),
     };
 
@@ -196,12 +212,13 @@ export async function POST(request: Request) {
             generationRequest,
           ),
           model: optionalText(payload.model, 120) || "borrador editado",
+          directContactMessage: undefined,
         }
       : await generateResumeContent(content, generationRequest);
 
     if (mode === "draft") {
       return NextResponse.json(
-        { resume: generated.resume, model: generated.model },
+        { resume: generated.resume, model: generated.model, directContactMessage: generated.directContactMessage },
         { headers: { "Cache-Control": "no-store" } },
       );
     }

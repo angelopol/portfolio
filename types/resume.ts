@@ -87,5 +87,10 @@ export type ResumeGenerationRequest = {
   profileImageUrl?: string;
   targetRole?: string;
   jobDescription?: string;
+  jobImage?: {
+    mimeType: "image/jpeg" | "image/png" | "image/webp";
+    data: string;
+  };
+  generateDirectContactMessage?: boolean;
   additionalInstructions?: string;
 };
