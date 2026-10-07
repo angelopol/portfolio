@@ -139,6 +139,7 @@ export type CareerEntry = {
 };
 
 export type SiteContent = {
+  github: { enabled: boolean; username: string; repository: string };
   site: SiteIdentity;
   contact: ContactInfo;
   theme: ThemeConfig;

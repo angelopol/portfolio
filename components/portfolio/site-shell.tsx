@@ -1,5 +1,5 @@
 import Image from "next/image";
-import dynamic from "next/dynamic";
+import { ResumePdfPreview } from "@/components/portfolio/resume-preview-loader";
 import type { CSSProperties } from "react";
 import type { IconType } from "react-icons";
 import {
@@ -14,21 +14,13 @@ import {
 } from "react-icons/fi";
 
 import { FloatingNav } from "@/components/portfolio/floating-nav";
+import { GithubProfile } from "@/components/portfolio/github-profile";
+import { PortfolioAssistant } from "@/components/portfolio/portfolio-assistant";
 import { CertificationsShowcase } from "@/components/portfolio/certifications-showcase";
 import { ProjectsShowcase } from "@/components/portfolio/projects-showcase";
 import { ProfessionalJourney } from "@/components/portfolio/professional-journey";
 import { interfaceCopy, type SiteLanguage } from "@/lib/i18n";
 import type { SiteContent } from "@/types/site";
-
-const ResumePdfPreview = dynamic(
-  () => import("@/components/portfolio/resume-pdf-preview").then((module) => module.ResumePdfPreview),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[420px] animate-pulse rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-soft)]" />
-    ),
-  }
-);
 
 const socialIcons: Record<string, IconType> = {
   github: FiGithub,
@@ -223,7 +215,7 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
               </div>
             </div>
 
-            <div className="lg:col-start-1 lg:row-start-2">
+            <div className="min-w-0 lg:col-start-1 lg:row-start-2">
               <CertificationsShowcase certifications={content.certifications} language={language} />
             </div>
 
@@ -317,10 +309,7 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
                 </a>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-dashed border-[var(--color-border)] bg-[var(--color-ghost)] p-5 text-sm leading-7 text-[var(--color-muted)]">
-                <p className="font-semibold text-[var(--color-text)]">{content.resume.previewTitle}</p>
-                <p className="mt-2">{content.resume.previewText}</p>
-              </div>
+
             </div>
 
             <div className="glass-panel p-4 shadow-glow sm:p-6">
@@ -332,7 +321,9 @@ export function SiteShell({ content, language }: { content: SiteContent; languag
             </div>
           </div>
         </section>
+        <GithubProfile config={content.github} language={language} />
       </main>
+      <PortfolioAssistant language={language} />
 
       <footer className="section-shell py-12">
         <div className="glass-panel flex flex-col gap-4 px-6 py-6 text-sm text-[var(--color-muted)] md:flex-row md:items-center md:justify-between">

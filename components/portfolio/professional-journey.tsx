@@ -39,9 +39,9 @@ function JourneyCard({
         <Icon />
       </span>
 
-      <div className="pl-16 sm:pl-0">
+      <div className="min-w-0 [overflow-wrap:anywhere]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-h-12 min-w-0 pl-16 sm:pl-0">
             <h3 className="font-display text-2xl font-semibold text-[var(--color-text)]">{entry.title}</h3>
             {entry.organization && <p className="mt-2 font-semibold text-[var(--color-accent-soft)]">{entry.organization}</p>}
           </div>

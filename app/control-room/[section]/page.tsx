@@ -21,6 +21,7 @@ const sections: AdminSection[] = [
   "projects",
   "certifications",
   "resume-builder",
+  "assistant",
   "settings",
 ];
 

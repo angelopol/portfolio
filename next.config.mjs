@@ -45,6 +45,11 @@ if (customPublicPattern) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  webpack(config) {
+    // Avoid PDF.js' internal webpack variable names colliding in development.
+    config.resolve.alias["pdfjs-dist$"] = "pdfjs-dist/build/pdf.min.mjs";
+    return config;
+  },
   experimental: {
     serverComponentsExternalPackages: ["@react-pdf/renderer", "unpdf"],
   },

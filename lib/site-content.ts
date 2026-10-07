@@ -24,6 +24,7 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
 
   return {
     ...content,
+    github: content.github ?? { enabled: true, username: "angelopol", repository: "angelopol" },
     contact: {
       location: legacyContent.contact?.location || content.home.location || content.site.location,
       phone: legacyContent.contact?.phone || "",

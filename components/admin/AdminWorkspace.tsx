@@ -21,6 +21,7 @@ import {
   FiLinkedin,
   FiLogOut,
   FiMove,
+  FiMessageCircle,
   FiPlus,
   FiSave,
   FiSettings,
@@ -34,6 +35,7 @@ import type { Certification, Project, SiteContent } from "@/types/site";
 import { TranslationEditor } from "@/components/admin/TranslationEditor";
 import { CareerEntriesEditor } from "@/components/admin/CareerEntriesEditor";
 import { ResumeBuilder } from "@/components/admin/ResumeBuilder";
+import { PortfolioAssistant } from "@/components/portfolio/portfolio-assistant";
 
 export type AdminSection =
   | "dashboard"
@@ -44,6 +46,7 @@ export type AdminSection =
   | "projects"
   | "certifications"
   | "resume-builder"
+  | "assistant"
   | "settings";
 
 const navigation: Array<{
@@ -99,6 +102,12 @@ const navigation: Array<{
     label: "Generar CV",
     description: "Gemini + PDF",
     icon: FiFileText,
+  },
+  {
+    section: "assistant",
+    label: "Asistente IA",
+    description: "Consultas y edición de datos",
+    icon: FiMessageCircle,
   },
   {
     section: "settings",
@@ -2659,6 +2668,13 @@ export function AdminWorkspace({
             />
           )}
 
+          {section === "assistant" && (
+            <section>
+              <PageHeading eyebrow="Inteligencia artificial" title="Asistente del portafolio" description="Haz preguntas sobre tu perfil o pide añadir datos y modificar parámetros. Revisa las propuestas antes de aplicarlas; se guardan con el sistema del panel." />
+              <PortfolioAssistant content={draft} onChange={commit} embedded />
+            </section>
+          )}
+
           {section === "settings" && (
             <section>
               <PageHeading
@@ -2667,6 +2683,15 @@ export function AdminWorkspace({
                 description="Ajusta el tema, enlaces sociales, CV o edita el contenido completo en JSON."
               />
               <div className="grid gap-6 xl:grid-cols-2">
+                <div className="glass-panel border border-white/10 p-6">
+                  <h2 className="font-display text-xl font-semibold">Panel del perfil de GitHub</h2>
+                  <p className="mt-2 text-sm text-slate-400">Muestra el README del repositorio de tu perfil. Se actualiza desde GitHub cada 15 minutos.</p>
+                  <label className="mt-4 flex items-center gap-3 text-sm"><input type="checkbox" checked={draft.github.enabled} onChange={event => commit({ ...draft, github: { ...draft.github, enabled: event.target.checked } })} />Mostrar panel en el portafolio</label>
+                  <div className="mt-4 space-y-4">
+                    <Field label="Usuario de GitHub"><input className={fieldClass} value={draft.github.username} onChange={event => commit({ ...draft, github: { ...draft.github, username: event.target.value.trim() } })} /></Field>
+                    <Field label="Repositorio del perfil"><input className={fieldClass} value={draft.github.repository} onChange={event => commit({ ...draft, github: { ...draft.github, repository: event.target.value.trim() } })} /></Field>
+                  </div>
+                </div>
                 <div className="glass-panel border border-white/10 p-6">
                   <h2 className="font-display text-xl font-semibold">
                     Tema visual
@@ -2903,6 +2928,7 @@ export function AdminWorkspace({
                     setJsonValue(value);
                     try {
                       const parsed = JSON.parse(value) as SiteContent;
+                      parsed.github ??= { enabled: true, username: "angelopol", repository: "angelopol" };
                       if (!Array.isArray(parsed.certifications))
                         parsed.certifications = [];
                       if (!Array.isArray(parsed.workExperience))
@@ -2961,7 +2987,7 @@ export function AdminWorkspace({
             </section>
           )}
 
-          {section !== "dashboard" && section !== "resume-builder" && (
+          {section !== "dashboard" && section !== "resume-builder" && section !== "assistant" && (
             <TranslationEditor
               content={draft}
               section={section}

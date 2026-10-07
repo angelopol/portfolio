@@ -1,5 +1,7 @@
 # Angelo Polgrossi Portfolio
 
+El panel de GitHub muestra el README de `angelopol/angelopol`, configurable desde el administrador. El chat público responde preguntas sobre el portafolio y el asistente privado en `/control-room/assistant` permite proponer, revisar y aplicar ediciones y nuevos datos. Consulta [configuración y comportamiento del asistente](docs/portfolio-assistant.md).
+
 Portfolio profesional desarrollado con Next.js, TypeScript y Tailwind CSS, diseñado para mostrar experiencia, proyectos, stack técnico y CV en una experiencia moderna, editable y lista para producción.
 
 Sitio: <a href="https://angelopol.com" target="_blank">angelopol.com</a>
